@@ -1,0 +1,5 @@
+member1: Sohail, Hameed, sohail.hameed@mail.utoronto.ca, n/a
+member2: firstName, lastName, contact email, contact voice
+member3: firstName, lastName, contact email, contact voice
+
+Note: our team has shared our voice contacts with each other personally and have decided to omit that from this file for privacy reasons
