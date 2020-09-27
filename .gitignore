@@ -1,0 +1,5 @@
+/db/*
+/database.txt
+/dbpackage/.*
+.*
+!/.gitignore
