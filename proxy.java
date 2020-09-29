@@ -3,10 +3,22 @@ import java.net.*;
 
 public class proxy {
   public static void main(String[] args) throws IOException {
+
+
     try {
+
+        if ((args.length == 0) || (args.length % 2 != 0)){
+            throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java proxy [remote port] [local port]");
+        }
+        int remoteport = 7080;
+        int localport = 8000;
+        int i = 0;
+        while (i < args.length) {
+            remoteport = Integer.parseInt(args[i++]);
+            localport = Integer.parseInt(args[i++]);
+        }
       String host = "localhost";
-      int remoteport = 8070;
-      int localport = 8000;
+
       // Print a start-up message
       System.out.println("Starting proxy for " + host + ":" + remoteport
           + " on port " + localport);
