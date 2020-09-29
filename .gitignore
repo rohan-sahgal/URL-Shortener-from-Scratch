@@ -2,4 +2,5 @@
 /database.txt
 /dbpackage/.*
 .*
+*.class
 !/.gitignore
