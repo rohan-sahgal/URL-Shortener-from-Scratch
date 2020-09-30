@@ -14,8 +14,6 @@ public class MultiThreadedProxy {
         }
 
 
-        
-        int num_triples = args.length / 3;
 
         ArrayList<ProxyTriple> triples = new ArrayList<ProxyTriple>();
 
@@ -39,17 +37,16 @@ public class MultiThreadedProxy {
         }
 
         
-        
         //Variable Declaration 
         ServerSocket serverSocket = null;
         boolean listening = true;
 
         int port_num = 8000;	//default port_num number
-        try {
-            port_num = Integer.parseInt(args[0]);
-        } catch (Exception e) {
-            
-        }
+        // try {
+        //     port_num = Integer.parseInt(args[0]);
+        // } catch (Exception e) {
+
+        // }
 
         try {
             serverSocket = new ServerSocket(port_num);
@@ -60,13 +57,7 @@ public class MultiThreadedProxy {
         int fwd_port = 8001;
         try {
             while (listening) {
-                if (fwd_port == 8001) {
-                    new ProxyThread(serverSocket.accept(), fwd_port).start();
-                    fwd_port = 8002;
-                } else {
-                    new ProxyThread(serverSocket.accept(), fwd_port).start();
-                    fwd_port = 8001;
-                }
+                new ProxyThread(serverSocket.accept(), triples).start();
             }
             serverSocket.close();
         } catch (Exception e) {
