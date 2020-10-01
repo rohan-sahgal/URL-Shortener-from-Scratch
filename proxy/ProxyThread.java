@@ -19,11 +19,6 @@ public class ProxyThread extends Thread {
         this.num_hosts = triples.size();
         this.triples = triples;
     }
-    
-    //Variable declaration
-
-    final byte[] request = new byte[1024];
-    byte[] reply = new byte[4096];
 
     
     /**This method handles  
@@ -53,7 +48,6 @@ public class ProxyThread extends Thread {
     public void runServer()
         throws IOException {
 
-      final byte[] request = new byte[1024];
       byte[] reply = new byte[4096];
 
       System.out.println("client connected to proxy");
@@ -61,21 +55,71 @@ public class ProxyThread extends Thread {
       Socket server = null;
       try {
 
+          // client input streams and buffers
           final InputStream streamFromClient = socket.getInputStream();
+          BufferedReader in = new BufferedReader(new InputStreamReader(streamFromClient));
           final OutputStream streamToClient = socket.getOutputStream();
+          
+          // logic for data distrbution to get correct server based on the short url
+          String shortResource = null;
+          final String  request;
+          try {
+              request = in.readLine();
+              Pattern pput = Pattern.compile("^PUT\\s+/\\?short=(\\S+)&long=(\\S+)\\s+(\\S+)$");
+              Matcher mput = pput.matcher(request);
 
-          int serverIndex = 0; //parseAndGetBucket(streamFromClient);
+              if(mput.matches()){
+                shortResource = mput.group(1);
+              } 
+              else {
+                Pattern pget = Pattern.compile("^(\\S+)\\s+/(\\S+)\\s+(\\S+)$");
+                Matcher mget = pget.matcher(request);
+                if(mget.matches()) {
+                    String method=mget.group(1);
+                    shortResource=mget.group(2);
+                }
+                else {
+                  System.err.println("Invalid request");
+                  PrintWriter out = new PrintWriter(streamToClient);
+                  out.print("Proxy got Invalid request " + request + ":"
+                      + ":\n");
+                  out.flush();
+                  socket.close();
+                  return;
+                }
+              }
+              
+            }
+          catch (Exception e) {
+              System.err.println("Server error");
+              PrintWriter out = new PrintWriter(streamToClient);
+              out.print("Proxy got a Server error\n");
+              out.flush();
+              socket.close();
+              return;
+          }
+
+          int serverIndex = getBucket(shortResource);
+          if (serverIndex == -1) {
+              System.err.println("Server error");
+              PrintWriter out = new PrintWriter(streamToClient);
+              out.print("Proxy got a Server error\n");
+              out.flush();
+              socket.close();
+              return;
+          }
+          
           ProxyTriple currentServer = triples.get(serverIndex);
-
           String host = currentServer.host;
           int remoteport = currentServer.port;
+          System.out.println("trying real server" + host + ":" + remoteport);
 
           // Make a connection to the real server.
           // If we cannot connect to the server, send an error to the
           // client, disconnect, and continue waiting for connections.
           try {
             server = new Socket(host, remoteport);
-            System.out.println("Connected to real server");
+            System.out.println("Connected to real server" + host + ":" + remoteport);
           } catch (IOException e) {
             PrintWriter out = new PrintWriter(streamToClient);
             out.print("Proxy server cannot connect to " + host + ":"
@@ -94,10 +138,13 @@ public class ProxyThread extends Thread {
           Thread t = new Thread() {
             public void run() {
               int bytesRead;
+              PrintWriter outToServer = new PrintWriter(streamToServer);
+              String input_Line;
               try {
-                while ((bytesRead = streamFromClient.read(request)) != -1) {
-                  streamToServer.write(request, 0, bytesRead);
-                  streamToServer.flush();
+                outToServer.print(request);
+                while ((input_Line = in.readLine()) != null) {
+                  outToServer.print(input_Line);
+                  outToServer.flush();
                 }
               } catch (IOException e) {
               }
@@ -149,44 +196,4 @@ public class ProxyThread extends Thread {
       return Math.abs(hash % num_hosts);
     }
 
-    public int parseAndGetBucket(InputStream clientInput){
-      String shortResource = null;
-      BufferedReader in = null;
-      try {
-        in = new BufferedReader(new InputStreamReader(clientInput));
-        String request = in.readLine();
-        Pattern pput = Pattern.compile("^PUT\\s+/\\?short=(\\S+)&long=(\\S+)\\s+(\\S+)$");
-        Matcher mput = pput.matcher(request);
-
-        if(mput.matches()){
-          shortResource = mput.group(1);
-        } 
-        else {
-          Pattern pget = Pattern.compile("^(\\S+)\\s+/(\\S+)\\s+(\\S+)$");
-          Matcher mget = pget.matcher(request);
-          if(mget.matches()) {
-              String method=mget.group(1);
-              shortResource=mget.group(2);
-          }
-          else {
-            System.err.println("Invalid request");
-          }
-        }
-        
-      }
-
-      catch (Exception e) {
-        System.err.println("Server error");
-        return -1;
-      }
-
-      finally {
-        try {
-          in.close();
-        } catch (Exception e) {
-          System.err.println("Error closing stream : " + e.getMessage());
-        } 
-      }
-      return getBucket(shortResource);
-    }
   }
