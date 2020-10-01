@@ -18,8 +18,10 @@ import java.util.Date;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReadWriteLock;
 
-public class URLShortner { 
+public class URLShortner {
 	
 	static final File WEB_ROOT = new File(".");
 	static final String DEFAULT_FILE = "../index.html";
@@ -40,20 +42,23 @@ public class URLShortner {
 			ServerSocket serverConnect = new ServerSocket(PORT);
 			System.out.println("Server started.\nListening for connections on port : " + PORT + " ...\n");
 			
+			URLShortnerSQL sql = new URLShortnerSQL();
+			sql.getConnection();
+
+			ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+
 			// we listen until user halts server execution
 			while (true) {
 				if (verbose) { System.out.println("Connecton opened. (" + new Date() + ")"); }
-				handle(serverConnect.accept());
+				new URLShortnerThread(serverConnect.accept(), sql, readWriteLock, true).start();
 			}
 		} catch (IOException e) {
 			System.err.println("Server Connection error : " + e.getMessage());
 		}
 	}
 
-	public static void handle(Socket connect) {
+	public static void handle(Socket connect, URLShortnerSQL sql) {
 		BufferedReader in = null; PrintWriter out = null; BufferedOutputStream dataOut = null;
-		
-		URLShortnerSQL sql = new URLShortnerSQL();
 
 		try {
 			in = new BufferedReader(new InputStreamReader(connect.getInputStream()));
