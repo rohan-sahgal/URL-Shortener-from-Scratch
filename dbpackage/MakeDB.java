@@ -99,8 +99,14 @@ public class MakeDB {
 	}
 
     public static void main(String[] args) {
-		String fileName = "url.db";
-		String url = "jdbc:sqlite:/student/hameedso/csc409/a1/repo_a1group77/db/" + fileName;
+
+		if ((args.length != 2)){
+            throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java MakeDB fullPath fileName");
+			// "jdbc:sqlite:/student/hameedso/csc409/a1/repo_a1group77/db/"
+        }
+		String fileName = args[0];
+		String url = args[1] + fileName;
+		System.out.println( url);
 		Connection c = getConnection(url);
 		createNewTable(c);
 		testInsert(c);

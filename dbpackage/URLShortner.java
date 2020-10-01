@@ -31,18 +31,25 @@ public class URLShortner {
 	static final String REDIRECT = "../redirect.html";
 	static final String NOT_FOUND = "../notfound.html";
 	static final String DATABASE = "../database.txt";
-	// port to listen connection
-	static final int PORT = 7080;
 	
 	// verbose mode
 	static final boolean verbose = true;
 
 	public static void main(String[] args) {
+
+		if ((args.length != 3)){
+            throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java URLShortner port fullPath fileName");
+        }
+		String fileName = args[1];
+		String url = args[2] + fileName;
+		// port to listen connection
+		int PORT = Integer.parseInt(args[0]);
+
 		try {
 			ServerSocket serverConnect = new ServerSocket(PORT);
 			System.out.println("Server started.\nListening for connections on port : " + PORT + " ...\n");
 			
-			URLShortnerSQL sql = new URLShortnerSQL();
+			URLShortnerSQL sql = new URLShortnerSQL(url);
 			sql.getConnection();
 
 			ReadWriteLock readWriteLock = new ReentrantReadWriteLock();

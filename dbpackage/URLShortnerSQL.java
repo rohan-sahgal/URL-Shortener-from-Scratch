@@ -2,7 +2,7 @@ import java.sql.*;
 
 public class URLShortnerSQL { 
 
-	private static final String URL = "jdbc:sqlite:/student/hameedso/csc409/a1/repo_a1group77/db/url.db";
+	private static String URL = null;
 	private static Connection connection;
 
 	private static final String REPLACE_STATEMENT = "REPLACE INTO URLS (SHORT,LONG) VALUES(?,?)";
@@ -10,13 +10,22 @@ public class URLShortnerSQL {
 	private static final String SELECT_BY_SHORT = "SELECT * FROM URLS WHERE SHORT=?";
 
 	public static void main(String[] args) {
-		URLShortnerSQL sql = new URLShortnerSQL();
+		if ((args.length != 2)){
+            throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java URLShortner fullPath fileName");
+        }
+		String fileName = args[0];
+		String url = args[1] + fileName;
+		URLShortnerSQL sql = new URLShortnerSQL(url);
 		sql.insertOrReplace("rohan", "sim");
 		sql.printAll();
 		String longURL = sql.findByShortURL("bby");
 		System.out.println(longURL);
 		longURL = sql.findByShortURL("rohan");
 		System.out.println(longURL);
+	}
+
+	public URLShortnerSQL(String URL) {
+		this.URL = URL;
 	}
 
 	/**

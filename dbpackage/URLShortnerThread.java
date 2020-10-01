@@ -33,7 +33,7 @@ public class URLShortnerThread extends Thread {
 	static final String DATABASE = "../database.txt";
 
 	// verbose mode
-	private boolean verbose = false;
+	private boolean verbose = true;
 	private URLShortnerSQL sql = null;
 	private ReadWriteLock readWriteLock = null;
 	private Socket connect = null;
