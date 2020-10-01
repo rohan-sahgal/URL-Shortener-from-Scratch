@@ -112,14 +112,13 @@ public class ProxyThread extends Thread {
           ProxyTriple currentServer = triples.get(serverIndex);
           String host = currentServer.host;
           int remoteport = currentServer.port;
-          System.out.println("trying real server" + host + ":" + remoteport);
 
           // Make a connection to the real server.
           // If we cannot connect to the server, send an error to the
           // client, disconnect, and continue waiting for connections.
           try {
             server = new Socket(host, remoteport);
-            System.out.println("Connected to real server" + host + ":" + remoteport);
+            System.out.println("Connected to real server " + host + ":" + remoteport);
           } catch (IOException e) {
             PrintWriter out = new PrintWriter(streamToClient);
             out.print("Proxy server cannot connect to " + host + ":"
@@ -141,10 +140,13 @@ public class ProxyThread extends Thread {
               PrintWriter outToServer = new PrintWriter(streamToServer);
               String input_Line;
               try {
-                outToServer.print(request);
+                outToServer.println(request);
+                outToServer.flush();
+                streamToServer.flush();
                 while ((input_Line = in.readLine()) != null) {
-                  outToServer.print(input_Line);
+                  outToServer.println(input_Line);
                   outToServer.flush();
+                  streamToServer.flush();
                 }
               } catch (IOException e) {
               }
@@ -152,6 +154,7 @@ public class ProxyThread extends Thread {
               // the client closed the connection to us, so close our
               // connection to the server.
               try {
+                outToServer.close();
                 streamToServer.close();
               } catch (IOException e) {
               }
