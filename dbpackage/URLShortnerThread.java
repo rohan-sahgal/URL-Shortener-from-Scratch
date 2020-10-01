@@ -81,6 +81,7 @@ public class URLShortnerThread extends Thread {
 				String contentMimeType = "text/html";
 				//read content to return to client
 				byte[] fileData = readFileData(file, fileLength);
+        if(verbose)System.out.println("fileLength: "+fileLength);
 					
 				out.println("HTTP/1.1 200 OK");
 				out.println("Server: Java HTTP Server/Shortner : 1.0");
