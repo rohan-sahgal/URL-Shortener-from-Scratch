@@ -7,16 +7,15 @@ import java.io.BufferedReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ProxyThread extends Thread {  
+public class LBThread extends Thread {  
     private Work w = null;
-    private int num_hosts = 0;
+    private int numBuckets = 100;
     private ProxyTripleList triples = null;
     
 
-    public ProxyThread(Work w, ProxyTripleList triples) {			
-        super("ProxyThread");
+    public LBThread(Work w, ProxyTripleList triples) {			
+        super("LBThread");
         this.w = w;
-        this.num_hosts = triples.size();
         this.triples = triples;
     }
 
@@ -30,6 +29,11 @@ public class ProxyThread extends Thread {
     public void run() {
 
         try {
+            System.out.println("Starting proxy for ...");
+            // Print a start-up message
+            // System.out.println("Starting proxy for " + this.host + ":" + this.remoteport
+            //     + " on port " + 8000);
+            // And start running the server
             while (true) {
               runServer(w.getWork());
             }
@@ -47,9 +51,7 @@ public class ProxyThread extends Thread {
         throws IOException {
 
       if (socket == null) return;
-
       byte[] reply = new byte[4096];
-      final byte[] request = new byte[1024];
 
       System.out.println("client connected to proxy");
 
@@ -58,12 +60,63 @@ public class ProxyThread extends Thread {
 
           // client input streams and buffers
           final InputStream streamFromClient = socket.getInputStream();
+          BufferedReader in = new BufferedReader(new InputStreamReader(streamFromClient));
           final OutputStream streamToClient = socket.getOutputStream();
           
-          int serverIndex = triples.getServerIdx();
-          ProxyTriple currentServer = triples.get(serverIndex);
+          // logic for data distrbution to get correct server based on the short url
+          String shortResource = null;
+          final String  request;
+          try {
+              request = in.readLine();
+              Pattern pput = Pattern.compile("^PUT\\s+/\\?short=(\\S+)&long=(\\S+)\\s+(\\S+)$");
+              Matcher mput = pput.matcher(request);
+
+              if(mput.matches()){
+                shortResource = mput.group(1);
+              } 
+              else {
+                Pattern pget = Pattern.compile("^(\\S+)\\s+/(\\S+)\\s+(\\S+)$");
+                Matcher mget = pget.matcher(request);
+                if(mget.matches()) {
+                    String method=mget.group(1);
+                    shortResource=mget.group(2);
+                }
+                else {
+                  System.err.println("Invalid request");
+                  PrintWriter out = new PrintWriter(streamToClient);
+                  out.print("Proxy got Invalid request " + request + ":"
+                      + ":\n");
+                  out.flush();
+                  socket.close();
+                  return;
+                }
+              }
+              
+            }
+          catch (Exception e) {
+              System.err.println("Server error");
+              PrintWriter out = new PrintWriter(streamToClient);
+              out.print("Proxy got a Server error\n");
+              out.flush();
+              socket.close();
+              return;
+          }
+
+          int bucketIndex = getBucket(shortResource);
+          if (bucketIndex == -1) {
+              System.err.println("Server error");
+              PrintWriter out = new PrintWriter(streamToClient);
+              out.print("Proxy got a Server error\n");
+              out.flush();
+              socket.close();
+              return;
+          }
+          
+          ProxyTriple currentServer = triples.getByBucket(bucketIndex);
           String host = currentServer.host;
           int remoteport = currentServer.port;
+
+          System.out.println("Connecting to real server " + host + ":" + remoteport);
 
           // Make a connection to the real server.
           // If we cannot connect to the server, send an error to the
@@ -89,9 +142,15 @@ public class ProxyThread extends Thread {
           Thread t = new Thread() {
             public void run() {
               int bytesRead;
+              PrintWriter outToServer = new PrintWriter(streamToServer);
+              String input_Line;
               try {
-                while ((bytesRead = streamFromClient.read(request)) != -1) {
-                  streamToServer.write(request, 0, bytesRead);
+                outToServer.println(request);
+                outToServer.flush();
+                streamToServer.flush();
+                while ((input_Line = in.readLine()) != null) {
+                  outToServer.println(input_Line);
+                  outToServer.flush();
                   streamToServer.flush();
                 }
               } catch (IOException e) {
@@ -100,6 +159,7 @@ public class ProxyThread extends Thread {
               // the client closed the connection to us, so close our
               // connection to the server.
               try {
+                outToServer.close();
                 streamToServer.close();
               } catch (IOException e) {
               }
@@ -135,6 +195,13 @@ public class ProxyThread extends Thread {
           }
       }
 
+    }
+
+    public int getBucket(String shortResource) {
+      if (shortResource == null) return -1;
+
+      int hash = shortResource.hashCode();
+      return Math.abs(hash % numBuckets);
     }
 
   }

@@ -5,9 +5,10 @@ public class URLShortnerSQL {
 	private static String URL = null;
 	private static Connection connection;
 
-	private static final String REPLACE_STATEMENT = "REPLACE INTO URLS (SHORT,LONG) VALUES(?,?)";
+	private static final String REPLACE_STATEMENT = "REPLACE INTO URLS (SHORT,LONG,HASH) VALUES(?,?,?)";
 	private static final String SELECT_ALL = "SELECT * FROM URLS ";
 	private static final String SELECT_BY_SHORT = "SELECT * FROM URLS WHERE SHORT=?";
+	private static final String SELECT_BY_SHORT_N_HASH = "SELECT * FROM URLS WHERE HASH=? AND SHORT=?";
 
 	public static void main(String[] args) {
 		if ((args.length != 2)){
@@ -16,7 +17,7 @@ public class URLShortnerSQL {
 		String fileName = args[0];
 		String url = args[1] + fileName;
 		URLShortnerSQL sql = new URLShortnerSQL(url);
-		sql.insertOrReplace("rohan", "sim");
+		sql.insertOrReplace("rohan", "sim", 1);
 		sql.printAll();
 		String longURL = sql.findByShortURL("bby");
 		System.out.println(longURL);
@@ -48,7 +49,7 @@ public class URLShortnerSQL {
 		return URLShortnerSQL.connection;
 	}
 
-	public static void insertOrReplace(String shortURL,String longURL) {
+	public static void insertOrReplace(String shortURL,String longURL, int hash) {
 		Connection c = getConnection();
 
 		try {
@@ -56,6 +57,7 @@ public class URLShortnerSQL {
 			PreparedStatement preparedStatement = c.prepareStatement(REPLACE_STATEMENT);
 			preparedStatement.setString(1, shortURL);
     		preparedStatement.setString(2, longURL);
+			preparedStatement.setInt(3, hash);
 			preparedStatement.executeUpdate();
 		} catch ( Exception e ) {
 			System.err.println( e.getClass().getName() + ": " + e.getMessage() );
@@ -80,10 +82,12 @@ public class URLShortnerSQL {
 				int id = rs.getInt("id");
 				String shortURL = rs.getString("short");
 				String longURL = rs.getString("long");
+				String hash = rs.getString("hash");
 				
 				System.out.println( "ID = " + id );
 				System.out.println( "SHORT = " + shortURL );
 				System.out.println( "LONG = " + longURL );
+				System.out.println( "HASH = " + hash );
 				System.out.println();
 			}
 			rs.close();
@@ -105,6 +109,27 @@ public class URLShortnerSQL {
 		String longURL = null;
 		try {
 			ResultSet resultSet = selectByShortURL(shortURL);
+			if (resultSet.next()) {
+				longURL = resultSet.getString("long");
+			}
+		} catch (Exception e) {
+			System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+		} 
+		return longURL;
+	}
+
+	public static ResultSet selectByShortURLHash(String shortURL, int hash) throws SQLException {
+		Connection c = getConnection();
+		PreparedStatement preparedStatement = c.prepareStatement(SELECT_BY_SHORT_N_HASH);
+		preparedStatement.setString(1, shortURL);
+		preparedStatement.setInt(2, hash);
+		return preparedStatement.executeQuery();
+	}
+
+	public static String findByShortURLHash(String shortURL, int hash){
+		String longURL = null;
+		try {
+			ResultSet resultSet = selectByShortURLHash(shortURL, hash);
 			if (resultSet.next()) {
 				longURL = resultSet.getString("long");
 			}

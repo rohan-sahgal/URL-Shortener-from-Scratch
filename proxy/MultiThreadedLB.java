@@ -6,11 +6,11 @@ import java.util.ArrayList;
 
         
 
-public class MultiThreadedProxy {
+public class MultiThreadedLB {
     public static void main(String[] args) {
         
         if ((args.length < 5) || ((args.length -2) % 3 != 0)){
-            throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java MultiThreadedProxy [local port] [threads] [remote host] [remote port] [weight]");
+            throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java MultiThreadedLB [local port] [threads] [remote host] [remote port] [weight]");
         }
 
         ProxyTripleList triples = new ProxyTripleList();
@@ -42,6 +42,13 @@ public class MultiThreadedProxy {
         ServerSocket serverSocket = null;
         boolean listening = true;
 
+
+        // try {
+        //     port_num = Integer.parseInt(args[0]);
+        // } catch (Exception e) {
+
+        // }
+
         try {
             serverSocket = new ServerSocket(port_num);
             System.out.println("Started on: " + port_num);
@@ -51,10 +58,10 @@ public class MultiThreadedProxy {
 
         Work w = new Work(serverSocket);
 
-        ProxyThread [] t = new ProxyThread[numWorkers];
+        LBThread [] t = new LBThread[numWorkers];
 
 		for(int i = 0;i<numWorkers;i++){
-			t[i] = new ProxyThread(w, triples);
+			t[i] = new LBThread(w, triples);
 			t[i].start();
 		}
 
