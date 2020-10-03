@@ -59,13 +59,13 @@ public class LBThread extends Thread {
       try {
 
           // client input streams and buffers
-          final InputStream streamFromClient = socket.getInputStream();
+          InputStream streamFromClient = socket.getInputStream();
           BufferedReader in = new BufferedReader(new InputStreamReader(streamFromClient));
-          final OutputStream streamToClient = socket.getOutputStream();
+          OutputStream streamToClient = socket.getOutputStream();
           
           // logic for data distrbution to get correct server based on the short url
           String shortResource = null;
-          final String  request;
+          String request;
           try {
               request = in.readLine();
               Pattern pput = Pattern.compile("^PUT\\s+/\\?short=(\\S+)&long=(\\S+)\\s+(\\S+)$");
@@ -134,8 +134,8 @@ public class LBThread extends Thread {
           }
 
           // Get server streams.
-          final InputStream streamFromServer = server.getInputStream();
-          final OutputStream streamToServer = server.getOutputStream();
+          InputStream streamFromServer = server.getInputStream();
+          OutputStream streamToServer = server.getOutputStream();
 
           // a thread to read the client's requests and pass them
           // to the server. A separate thread for asynchronous.
@@ -151,18 +151,20 @@ public class LBThread extends Thread {
                 while ((input_Line = in.readLine()) != null) {
                   outToServer.println(input_Line);
                   outToServer.flush();
-                  streamToServer.flush();
+                  //streamToServer.flush();
                 }
               } catch (IOException e) {
+                 System.err.println("thread reading lb: " + e.getMessage());
               }
 
               // the client closed the connection to us, so close our
               // connection to the server.
-              try {
-                outToServer.close();
-                streamToServer.close();
-              } catch (IOException e) {
-              }
+              // try {
+              //   //outToServer.close();
+              //   streamToServer.close();
+              // } catch (IOException e) {
+              //   System.err.println("Thread : " + e.getMessage());
+              // }
             }
           };
 
@@ -174,11 +176,19 @@ public class LBThread extends Thread {
           int bytesRead;
           try {
             while ((bytesRead = streamFromServer.read(reply)) != -1) {
-              streamToClient.write(reply, 0, bytesRead);
-              streamToClient.flush();
+              System.out.println("Number or byte: " + bytesRead);
+              try {
+                streamToClient.write(reply, 0, bytesRead);
+                streamToClient.flush();
+              } catch (IOException e) {
+                System.err.println("other halfway : " + e.getMessage());
+                e.printStackTrace();
+             } 
             }
           } catch (IOException e) {
-          }
+            System.err.println("halfway : " + e.getMessage());
+            e.printStackTrace();
+          } 
 
           // The server closed its connection to us, so we close our
           // connection to our socket.

@@ -95,6 +95,7 @@ public class ProxyThread extends Thread {
                   streamToServer.flush();
                 }
               } catch (IOException e) {
+                System.err.println("thread reading proxy : " + e.getMessage());
               }
 
               // the client closed the connection to us, so close our
@@ -102,6 +103,7 @@ public class ProxyThread extends Thread {
               try {
                 streamToServer.close();
               } catch (IOException e) {
+                System.err.println("thread : " + e.getMessage());
               }
             }
           };
@@ -118,6 +120,7 @@ public class ProxyThread extends Thread {
               streamToClient.flush();
             }
           } catch (IOException e) {
+            System.err.println("halfway : " + e.getMessage());
           }
 
           // The server closed its connection to us, so we close our
