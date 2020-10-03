@@ -16,39 +16,45 @@ class OrchestrationService(Cmd):
         
         CWD = os.getcwd()
         
-        # Read file only once using numpy
+        # Read file into an array once.
+        hosts_array = []
+        with open('hosts') as hosts_file:
+            for host in hosts_file:
+                hosts_array.append(host.rstrip())
         
-        with open('hosts') as hosts_file:
-            argsLB, argsProxy = "", ""
-            for host in hosts_file:
-              host = host.rstrip()
-              
-              argsLB += host + " " + str(self.URL_SHORTENER_PORT) + " " + "1" + " "
-              argsProxy += host + " " + str(self.LOAD_BALANCER_PORT) + " " + "1" + " "
+        if len(hosts_array) == 0:
+            raise Exception('Error: No hosts specified in the host file.')
 
-        with open('hosts') as hosts_file:
-            firstHost = self.get_first_line(hosts_file).rstrip()
+        
+        argsLB, argsProxy = "", ""
+        for host in hosts_array:
+            host = host.rstrip()
             
-            # Setup Proxy Server
-            print ("Starting up {} proxy server".format(firstHost))
-            subprocess.run(["ssh", firstHost, "cd {}/proxy; nohup java MultiThreadedProxy {} 4 {} > out/proxy{}.out 2>out/proxy{}.error < /dev/null &".format(CWD, self.PROXY_PORT, argsProxy, firstHost, firstHost)])
+            argsLB += host + " " + str(self.URL_SHORTENER_PORT) + " " + "1" + " "
+            argsProxy += host + " " + str(self.LOAD_BALANCER_PORT) + " " + "1" + " "
+
+        firstHost = hosts_array[0]
+        
+        # Setup Proxy Server
+        print ("Starting up {} proxy server".format(firstHost))
+        subprocess.run(["ssh", firstHost, "cd {}/proxy; nohup java MultiThreadedProxy {} 4 {} > out/proxy{}.out 2>out/proxy{}.error < /dev/null &".format(CWD, self.PROXY_PORT, argsProxy, firstHost, firstHost)])
+        
+        for host in hosts_array:
+            n = 1
+            host = host.rstrip()
+            # TODO: need to catch bad host names
             
-            for host in hosts_file:
-                n = 1
-                host = host.rstrip()
-                # TODO: need to catch bad host names
-                
-                # Setup Database
-                print("Starting up {} database".format(host))
-                subprocess.run(["ssh", host, "cd {}/dbpackage/; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' MakeDB url{}.db jdbc:sqlite:/virtual/".format(CWD, n)], stdout=subprocess.DEVNULL)
-                
-                # Setup Load Balancer
-                print("Starting up {} load balancer".format(host))
-                subprocess.run(["ssh", host, "cd {}/proxy; nohup java MultiThreadedLB {} 4 {} > out/LB{}.out 2>out/LB{}.error < /dev/null &".format(CWD, self.LOAD_BALANCER_PORT, argsLB, host, host)])
+            # Setup Database
+            print("Starting up {} database".format(host))
+            subprocess.run(["ssh", host, "cd {}/dbpackage/; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' MakeDB url{}.db jdbc:sqlite:/virtual/".format(CWD, n)], stdout=subprocess.DEVNULL)
             
-                # Setup URL Shortener
-                print("Starting up {} URL Shortener service".format(host))
-                subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, n, host, host)])
+            # Setup Load Balancer
+            print("Starting up {} load balancer".format(host))
+            subprocess.run(["ssh", host, "cd {}/proxy; nohup java MultiThreadedLB {} 4 {} > out/LB{}.out 2>out/LB{}.error < /dev/null &".format(CWD, self.LOAD_BALANCER_PORT, argsLB, host, host)])
+        
+            # Setup URL Shortener
+            print("Starting up {} URL Shortener service".format(host))
+            subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, n, host, host)])
                 
                 
     def do_stop(self, input):
