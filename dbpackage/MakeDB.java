@@ -29,9 +29,14 @@ public class MakeDB {
 
 			stmt = c.createStatement();
 			String sql = "CREATE TABLE URLS " +
-						 "(ID INTEGER PRIMARY KEY AUTOINCREMENT," +
+						 "(ID       INTEGER PRIMARY KEY AUTOINCREMENT," +
 						 " SHORT    TEXT    NOT NULL UNIQUE, " + 
-						 " LONG     TEXT    NOT NULL UNIQUE)"; 
+						 " LONG     TEXT    NOT NULL," +
+						 " HASH     INTEGER NOT NULL)"; 
+
+			stmt.executeUpdate(sql);
+			sql = "CREATE INDEX HASH_IDX ON URLS" +
+						 "(HASH)"; 
 			stmt.executeUpdate(sql);
 			stmt.close();
 		} catch ( Exception e ) {
@@ -47,19 +52,8 @@ public class MakeDB {
 		try {
 			Class.forName("org.sqlite.JDBC");
 			stmt = c.createStatement();
-			String sql = "REPLACE INTO URLS (SHORT,LONG) " +
-						 "VALUES ('Paul', 'California');"; 
-			stmt.executeUpdate(sql);
-			sql = "REPLACE INTO URLS (SHORT,LONG) " +
-				  "VALUES ('Sohail', 'Hameed');"; 
-			stmt.executeUpdate(sql);
-
-			sql = "REPLACE INTO URLS (SHORT,LONG) " +
-				  "VALUES ('George', 'Ma');";  
-			stmt.executeUpdate(sql);
-
-			sql = "REPLACE INTO URLS (SHORT,LONG) " +
-				  "VALUES ('George', 'Ka');";  
+			String sql = "REPLACE INTO URLS (SHORT,LONG,HASH) " +
+						 "VALUES ('Paul', 'California', 1);"; 
 			stmt.executeUpdate(sql);
 			stmt.close();
 		} catch ( Exception e ) {
@@ -82,10 +76,12 @@ public class MakeDB {
 				int id = rs.getInt("id");
 				String short_var = rs.getString("short");
 				String long_var = rs.getString("long");
+				int hash = rs.getInt("hash");
 				
 				System.out.println( "ID = " + id );
 				System.out.println( "SHORT = " + short_var );
 				System.out.println( "LONG = " + long_var );
+				System.out.println( "HASH = " + hash );
 				System.out.println();
 			}
 			rs.close();

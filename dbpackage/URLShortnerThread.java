@@ -37,6 +37,7 @@ public class URLShortnerThread extends Thread {
 	private URLShortnerSQL sql = null;
 	private ReadWriteLock readWriteLock = null;
 	private Socket connect = null;
+	private int numBuckets = 100;
 
 	public URLShortnerThread(Socket connect, URLShortnerSQL sql, ReadWriteLock readWriteLock, boolean verbose) {			
         super("URLShortnerThread");
@@ -71,9 +72,10 @@ public class URLShortnerThread extends Thread {
 				String shortResource=mput.group(1);
 				String longResource=mput.group(2);
 				String httpVersion=mput.group(3);
+				int hash = getBucket(shortResource);
 				
 				readWriteLock.writeLock().lock();
-				sql.insertOrReplace(shortResource, longResource);
+				sql.insertOrReplace(shortResource, longResource, hash);
 				readWriteLock.writeLock().unlock();
 
 				File file = new File(WEB_ROOT, REDIRECT_RECORDED);
@@ -81,7 +83,7 @@ public class URLShortnerThread extends Thread {
 				String contentMimeType = "text/html";
 				//read content to return to client
 				byte[] fileData = readFileData(file, fileLength);
-        if(verbose)System.out.println("fileLength: "+fileLength);
+        		if(verbose)System.out.println("fileLength: "+fileLength);
 					
 				out.println("HTTP/1.1 200 OK");
 				out.println("Server: Java HTTP Server/Shortner : 1.0");
@@ -100,9 +102,10 @@ public class URLShortnerThread extends Thread {
 					String method=mget.group(1);
 					String shortResource=mget.group(2);
 					String httpVersion=mget.group(3);
+					int hash = getBucket(shortResource);
 
 					readWriteLock.readLock().lock();
-					String longResource = sql.findByShortURL(shortResource);
+					String longResource = sql.findByShortURLHash(shortResource, hash);
 					readWriteLock.readLock().unlock();
 
 					if(longResource!=null){
@@ -176,4 +179,11 @@ public class URLShortnerThread extends Thread {
 		
 		return fileData;
 	}
+
+	private int getBucket(String shortResource) {
+      if (shortResource == null) return -1;
+
+      int hash = shortResource.hashCode();
+      return Math.abs(hash % numBuckets);
+    }
 }
