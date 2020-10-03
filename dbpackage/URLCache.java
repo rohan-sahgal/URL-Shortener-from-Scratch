@@ -9,7 +9,7 @@ import java.io.*;
 public class URLCache {
  
     private long timeToLive;
-    private HashMap<String, String> cacheMap;
+    private HashMap<String, CacheObject> cacheMap;
  
     protected class CacheObject {
         public long lastAccessed = System.currentTimeMillis();
@@ -23,7 +23,7 @@ public class URLCache {
     public URLCache(long TimeToLive, final long TimerInterval, int maxItems) {
         this.timeToLive = TimeToLive * 1000;
  
-        cacheMap = new HashMap<String, String>(maxItems);
+        cacheMap = new HashMap<String, CacheObject>(maxItems);
  
         if (timeToLive > 0 && TimerInterval > 0) {
  
@@ -44,16 +44,16 @@ public class URLCache {
         }
     }
  
-    public void put(String short, String long) {
+    public void put(String shortURL, String longURL) {
         synchronized (cacheMap) {
-            cacheMap.put(short, new CacheObject(long));
+            cacheMap.put(shortURL, new CacheObject(longURL));
         }
     }
  
     @SuppressWarnings("unchecked")
-    public String get(String short) {
+    public String get(String shortURL) {
         synchronized (cacheMap) {
-            CacheObject c = (CacheObject) cacheMap.get(short);
+            CacheObject c = (CacheObject) cacheMap.get(shortURL);
  
             if (c == null)
                 return null;
@@ -64,9 +64,9 @@ public class URLCache {
         }
     }
  
-    public void remove(String short) {
+    public void remove(String shortURL) {
         synchronized (cacheMap) {
-            cacheMap.remove(short);
+            cacheMap.remove(shortURL);
         }
     }
  
@@ -92,8 +92,11 @@ public class URLCache {
             CacheObject c = null;
 
             while (hashMapIterator.hasNext()) {
-                key = (String) hashMapIterator.next();
-                c = (CacheObject) hashMapIterator.getValue();
+                
+                // key = (String) hashMapIterator.next();
+                Map.Entry mapElement = (Map.Entry)hashMapIterator.next();
+                c = (CacheObject) mapElement.getValue();
+                key = (String) mapElement.getKey();
  
                 if (c != null && (now > (timeToLive + c.lastAccessed))) {
                     deleteKey.add(key);

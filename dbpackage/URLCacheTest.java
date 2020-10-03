@@ -18,7 +18,7 @@ public class URLCacheTest {
         // Test with TimeToLive = 200 seconds
         // TimerInterval = 500 seconds
         // maxItems = 6
-        URLCache<String, String> cache = new URLCache<String, String>(200, 500, 6);
+        URLCache cache = new URLCache(200, 500, 6);
  
         cache.put("eBay", "eBay");
         cache.put("Paypal", "Paypal");
@@ -42,7 +42,7 @@ public class URLCacheTest {
         // Test with TimeToLive = 1 second
         // TimerInterval = 1 second
         // maxItems = 10
-        URLCache<String, String> cache = new URLCache<String, String>(1, 1, 10);
+        URLCache cache = new URLCache(1, 1, 10);
  
         cache.put("eBay", "eBay");
         cache.put("Paypal", "Paypal");
@@ -61,7 +61,7 @@ public class URLCacheTest {
         // timerIntervalInSeconds = 100 seconds
         // maxItems = 500000
  
-        URLCache<String, String> cache = new URLCache<String, String>(100, 100, 500000);
+        URLCache cache = new URLCache(100, 100, 500000);
  
         for (int i = 0; i < size; i++) {
             String value = Integer.toString(i);
