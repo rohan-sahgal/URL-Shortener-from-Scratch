@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 from cmd import Cmd
-import subprocess, os
+from subprocess import PIPE
+import subprocess, os, time
 
 class OrchestrationService(Cmd):
 
@@ -24,7 +25,6 @@ class OrchestrationService(Cmd):
     LOAD_BALANCER_PORT = 8001
     URL_SHORTENER_PORT = 8002
 
-    # TODO: need to mkdir the corresponding out folders or add the out folders to the repo
     def do_start(self, input):
         '''# Setup/start the database, proxy, load balancers and URLShortener
         service on all hosts defined in the `host` file.'''
@@ -69,6 +69,32 @@ class OrchestrationService(Cmd):
                 
             n += 1
 
+    def do_monitor(self, input):
+        '''# Monitor the proxy, database, load balancer and URLShortener service
+        '''
+        proxyBuilder = ["Proxy Status:\n"]
+        lbBuilder = ["\nLoad Balancer Status:\n"]
+        urlBuilder = ["\nURL Shortener Status:\n"]
+        dbBuilder = ["\nDatabase Status:\n"]
+
+        proxyOutput = subprocess.run(["ssh", self.hosts_array[0], "lsof -i -P | grep {} | cut -d' ' -f5".format(self.PROXY_PORT)], stdout=PIPE, stderr=PIPE)
+        self.service_status("Proxy", self.hosts_array[0], self.PROXY_PORT, proxyOutput.stdout, proxyBuilder)
+
+        for host in self.hosts_array:
+            lbOutput = subprocess.run(["ssh", host, "lsof -i -P | grep {} | cut -d' ' -f5".format(self.LOAD_BALANCER_PORT)], stdout=PIPE, stderr=PIPE) 
+            self.service_status("Load Balancer", host, self.LOAD_BALANCER_PORT, lbOutput.stdout, lbBuilder)
+
+            urlOutput = subprocess.run(["ssh", host, "lsof -i -P | grep {} | cut -d' ' -f5".format(self.URL_SHORTENER_PORT)], stdout=PIPE, stderr=PIPE) 
+            self.service_status("URL Shortener", host, self.URL_SHORTENER_PORT, urlOutput.stdout, urlBuilder)
+
+            # dbOutput = subprocess.run(["ssh", host, "lsof -i -P | grep {} | cut -d' ' -f5".format(self.LOAD_BALANCER_PORT)], stdout=PIPE, stderr=PIPE) 
+            # self.service_status("Load Balancer", host, self.DB_PORT, dbOutput.stdout, dbBuilder)
+
+        
+        print(''.join(str(x) for x in (proxyBuilder + lbBuilder + urlBuilder)))
+
+
+
     def do_stop(self, input):
         '''# Stop the database, proxy, load balancers and URLShortener service 
         on all hosts defined in the `host` file.'''
@@ -94,6 +120,12 @@ class OrchestrationService(Cmd):
             print ("Shutting down {} Load Balancer".format(host))
             subprocess.run(["ssh", host, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.LOAD_BALANCER_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
     
+    def service_status(self, serviceName, hostName, servicePort, proxyOutput, outputBuilder):
+        if proxyOutput == b'':
+            outputBuilder.append("{} \t {}:{} \t DOWN \n".format(serviceName, hostName, servicePort))
+        else:
+            outputBuilder.append("{} \t {}:{} \t UP \n".format(serviceName, hostName, servicePort))
+
     def compile_java_files(self):
         print ("Compiling java executables")
         subprocess.run("./compileJava", shell=True)
