@@ -142,17 +142,19 @@ public class LBThread extends Thread {
           Thread t = new Thread() {
             public void run() {
               int bytesRead;
-              PrintWriter outToServer = new PrintWriter(streamToServer);
+              BufferedWriter outToServer = new BufferedWriter(new OutputStreamWriter(streamToServer));
               String input_Line;
               try {
-                outToServer.println(request);
+                outToServer.write(request);
+                outToServer.write("\n");
                 //outToServer.flush();
                 //streamToServer.flush();
                 while ((input_Line = in.readLine()) != null) {
-                  outToServer.println(input_Line);
+                  outToServer.write(input_Line);
+                  outToServer.write("\n");
                   if (input_Line.equals("")) {
                     outToServer.flush();
-                    streamToServer.flush();
+                    //streamToServer.flush();
                   }
                   //streamToServer.flush();
                 }
