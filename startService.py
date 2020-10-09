@@ -21,9 +21,9 @@ class OrchestrationService(Cmd):
     prompt = '> '
     intro = "Orchestration Service for CSC409. Type ? to list commands"
     
-    PROXY_PORT = 8000
-    LOAD_BALANCER_PORT = 8001
-    URL_SHORTENER_PORT = 8002
+    PROXY_PORT = 8003
+    LOAD_BALANCER_PORT = 8004
+    URL_SHORTENER_PORT = 8005
 
     def do_start(self, input):
         '''# Setup/start the database, proxy, load balancers and URLShortener
@@ -50,8 +50,9 @@ class OrchestrationService(Cmd):
         print ("Starting up {} proxy server".format(firstHost))
         subprocess.run(["ssh", firstHost, "cd {}/proxy; nohup java MultiThreadedProxy {} 4 {} > out/proxy{}.out 2>out/proxy{}.error < /dev/null &".format(CWD, self.PROXY_PORT, argsProxy, firstHost, firstHost)])
         
+        n = 1
         for host in self.hosts_array:
-            n = 1
+            
             host = host.rstrip()
             # TODO: need to catch bad host names
             
@@ -87,9 +88,9 @@ class OrchestrationService(Cmd):
             urlOutput = subprocess.run(["ssh", host, "lsof -i -P | grep {} | cut -d' ' -f5".format(self.URL_SHORTENER_PORT)], stdout=PIPE, stderr=PIPE) 
             self.service_status("URL Shortener", host, self.URL_SHORTENER_PORT, urlOutput.stdout, urlBuilder)
 
-            # dbOutput = subprocess.run(["ssh", host, "lsof -i -P | grep {} | cut -d' ' -f5".format(self.LOAD_BALANCER_PORT)], stdout=PIPE, stderr=PIPE) 
-            # self.service_status("Load Balancer", host, self.DB_PORT, dbOutput.stdout, dbBuilder)
-
+            #figure out how to see state of database
+            #idea: try a put and remove, see if successful?
+            
         
         print(''.join(str(x) for x in (proxyBuilder + lbBuilder + urlBuilder)))
 
@@ -104,7 +105,7 @@ class OrchestrationService(Cmd):
         # Stop proxy server
         print("Shutting down {} proxy server...".format(firstHost))
         subprocess.run(["ssh", firstHost, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.PROXY_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
-
+        
         for host in self.hosts_array:
             host = host.rstrip()
             
