@@ -146,11 +146,14 @@ public class LBThread extends Thread {
               String input_Line;
               try {
                 outToServer.println(request);
-                outToServer.flush();
-                streamToServer.flush();
+                //outToServer.flush();
+                //streamToServer.flush();
                 while ((input_Line = in.readLine()) != null) {
                   outToServer.println(input_Line);
-                  outToServer.flush();
+                  if (input_Line.equals("")) {
+                    outToServer.flush();
+                    streamToServer.flush();
+                  }
                   //streamToServer.flush();
                 }
               } catch (IOException e) {
