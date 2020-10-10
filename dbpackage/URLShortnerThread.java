@@ -79,7 +79,6 @@ public class URLShortnerThread extends Thread {
 				String shortResource=mput.group(1);
 				String longResource=mput.group(2);
 				String httpVersion=mput.group(3);
-				int hash = getBucket(shortResource);
 				
 				readWriteLockDB.writeLock().lock();
 				sql.insert(shortResource, longResource);
@@ -109,7 +108,6 @@ public class URLShortnerThread extends Thread {
 					String method=mget.group(1);
 					String shortResource=mget.group(2);
 					String httpVersion=mget.group(3);
-					int hash = getBucket(shortResource);
 
 					String longResource = null;
 					readWriteLockCache.writeLock().lock();
@@ -195,10 +193,4 @@ public class URLShortnerThread extends Thread {
 		return fileData;
 	}
 
-	private int getBucket(String shortResource) {
-      if (shortResource == null) return -1;
-
-      int hash = shortResource.hashCode();
-      return Math.abs(hash % numBuckets);
-    }
 }
