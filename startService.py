@@ -35,6 +35,7 @@ class OrchestrationService(Cmd):
 
     has_started = False
 
+    #TODO: give error message when servers cannot start properly (e.g. ports busy)
     def do_start(self, input):
         '''# Setup/start the database, proxy, load balancers and URLShortener
         service on all hosts defined in the `host` file.'''
@@ -123,25 +124,16 @@ class OrchestrationService(Cmd):
         
         firstHost = self.hosts_array[0]
         # Stop proxy server
-        print("Shutting down {} proxy server...".format(firstHost))
-        subprocess.run(["ssh", firstHost, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.PROXY_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
+        print("Shutting down all java servers...")
+        # subprocess.run(["ssh", firstHost, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.PROXY_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
         
+
         for host in self.hosts_array:
             host = host.rstrip()
+            print("Shutting down servers on {}...".format(host))
             subprocess.run(["ssh", host, "killall java"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
 
-            # Remove *.db file
-            print("Shutting down {} database...".format(host))
-            subprocess.run(["ssh", host, "cd {}; rm /virtual/*.db".format(CWD)])
-
-            # Stop URL Shortener
-            print ("Shutting down {} URL Shortener Service".format(host))
-            subprocess.run(["ssh", host, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.URL_SHORTENER_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
-            
-            # # Stop Load Balancer
-            print ("Shutting down {} Load Balancer".format(host))
-            subprocess.run(["ssh", host, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.LOAD_BALANCER_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
-    
+        print("Servers successfully shut down.")
         self.has_started = False
 
     def service_status(self, serviceName, hostName, servicePort, proxyOutput, outputBuilder):

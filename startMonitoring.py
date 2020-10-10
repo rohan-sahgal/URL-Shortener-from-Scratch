@@ -5,11 +5,12 @@ import subprocess, os, time
 import signal
 import sys
 
-PROXY_PORT = 8003
-LOAD_BALANCER_PORT = 8004
-URL_SHORTENER_PORT = 8005
+PROXY_PORT = 8000
+LOAD_BALANCER_PORT = 8001
+URL_SHORTENER_PORT = 8002
 
 hosts_array = []
+hosts_ranges = []
 
 CWD = os.getcwd()
 
@@ -20,16 +21,18 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def init_hosts(hosts_array):
+def init_hosts(hosts):
 
     with open('hosts') as hosts_file:
         for host in hosts_file:
-            hosts_array.append(host.rstrip())
+            host_range = host.rstrip().split(" ")
+            hosts_array.append(host_range[0])
+            hosts_ranges.append(host_range[1])
             
-    if len(hosts_array) == 0:
+    if len(hosts) == 0:
         raise Exception('Error: No hosts specified in the host file.')
 
-    firstHost = hosts_array[0]
+    firstHost = hosts[0]
     
 
 
@@ -53,11 +56,12 @@ def service_status(serviceName, hostName, servicePort, proxyOutput):
 init_hosts(hosts_array)
 
 argsLB, argsProxy = "", ""
-for host in hosts_array:
-    host = host.rstrip()
+for i in range(len(hosts_array)):
+    host = hosts_array[i].rstrip()
+    host_range = hosts_ranges[i].rstrip()
     
-    argsLB += host + " " + str(URL_SHORTENER_PORT) + " " + "1" + " "
-    argsProxy += host + " " + str(LOAD_BALANCER_PORT) + " " + "1" + " "
+    argsLB += host + " " + str(URL_SHORTENER_PORT) + " " + "1" + " " + host_range + " "
+    argsProxy += host + " " + str(LOAD_BALANCER_PORT) + " " + "1" + " " + host_range + " "
 
 signal.signal(signal.SIGINT, signal_handler)
 
