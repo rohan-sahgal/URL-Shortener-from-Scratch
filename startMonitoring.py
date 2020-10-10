@@ -66,7 +66,7 @@ for i in range(len(hosts_array)):
 signal.signal(signal.SIGINT, signal_handler)
 
 # Main Loop
-print("Monitoring services that go down...")
+print("Monitoring services that go down...\nPress Ctrl+C to exit.")
 while True:
 
     proxyOutput = subprocess.run(["ssh", hosts_array[0], "lsof -i -P | grep {} | cut -d' ' -f5".format(PROXY_PORT)], stdout=PIPE, stderr=PIPE)
