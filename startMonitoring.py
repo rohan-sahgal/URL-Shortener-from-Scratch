@@ -34,20 +34,16 @@ def init_hosts(hosts_array):
 
 
 def revive(serviceName, hostName, servicePort):
-
+    print ("\n{} on {}:{} down: restarting...".format(serviceName, hostName, servicePort))
     if serviceName == "Proxy":
-        print ("Starting up {} proxy server".format(hostName))
-        # subprocess.run(["ssh", hostName, "cd {}/proxy; nohup java MultiThreadedProxy {} 4 {} > out/proxy{}.out 2>out/proxy{}.error < /dev/null &".format(CWD, servicePort, argsProxy, hostName, hostName)])
         subprocess.run(["ssh", hostName, "cd {}/proxy; nohup java MultiThreadedProxy {} 4 {} > out/Proxy{}.out 2>out/Proxy{}.error < /dev/null &".format(CWD, servicePort, argsProxy, hostName, hostName)])
-
-    if serviceName == "Load Balancer":
-        print("Starting up {} load balancer".format(hostName))
+        print ("Successfully restarted {} on {}:{}".format(serviceName, hostName, servicePort))
+    elif serviceName == "Load Balancer":
         subprocess.run(["ssh", hostName, "cd {}/proxy; nohup java MultiThreadedLB {} 4 {} > out/LB{}.out 2>out/LB{}.error < /dev/null &".format(CWD, servicePort, argsLB, hostName, hostName)])
-    
-    if serviceName == "URL Shortener":
-        print("Starting up {} URL Shortener service".format(hostName))
+        print ("Successfully restarted {} on {}:{}".format(serviceName, hostName, servicePort))
+    elif serviceName == "URL Shortener":
         subprocess.run(["ssh", hostName, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, servicePort, hosts_array.index(hostName) + 1, hostName, hostName)])
-                
+        print ("Successfully restarted {} on {}:{}".format(serviceName, hostName, servicePort))
 
 def service_status(serviceName, hostName, servicePort, proxyOutput):
     if proxyOutput == b'':
@@ -65,12 +61,9 @@ for host in hosts_array:
 
 signal.signal(signal.SIGINT, signal_handler)
 
+# Main Loop
+print("Monitoring services that go down...")
 while True:
-
-    # def do_status(self, input):
-    #     '''# Monitor the proxy, database, load balancer and URLShortener service
-    #     '''
-
 
     proxyOutput = subprocess.run(["ssh", hosts_array[0], "lsof -i -P | grep {} | cut -d' ' -f5".format(PROXY_PORT)], stdout=PIPE, stderr=PIPE)
     service_status("Proxy", hosts_array[0], PROXY_PORT, proxyOutput.stdout)

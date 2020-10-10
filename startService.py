@@ -36,6 +36,8 @@ class OrchestrationService(Cmd):
     LOAD_BALANCER_PORT = 8004
     URL_SHORTENER_PORT = 8005
 
+    has_started = False
+
     def do_start(self, input):
         '''# Setup/start the database, proxy, load balancers and URLShortener
         service on all hosts defined in the `host` file.'''
@@ -67,9 +69,9 @@ class OrchestrationService(Cmd):
             host = host.rstrip()
             # TODO: need to catch bad host names
             
-            # Setup Database
-            print("Starting up {} database".format(host))
-            subprocess.run(["ssh", host, "cd {}/dbpackage/; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' MakeDB url{}.db jdbc:sqlite:/virtual/".format(CWD, n)], stdout=subprocess.DEVNULL)
+            # # Setup Database
+            # print("Starting up {} database".format(host))
+            # subprocess.run(["ssh", host, "cd {}/dbpackage/; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' MakeDB url{}.db jdbc:sqlite:/virtual/".format(CWD, n)], stdout=subprocess.DEVNULL)
             
             # Setup Load Balancer
             print("Starting up {} load balancer".format(host))
@@ -80,10 +82,15 @@ class OrchestrationService(Cmd):
             subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, n, host, host)])
                 
             n += 1
+        
+        self.has_started = True
     
     def do_monitor(self, input):
-        subprocess.run("python3 startMonitoring.py", shell=True)
-
+        '''# Monitor '''
+        if (self.has_started):
+            subprocess.run("python3 startMonitoring.py", shell=True)
+        else:
+            print("Please start the service before monitoring\n")
 
     def do_status(self, input):
         '''# Monitor the proxy, database, load balancer and URLShortener service
@@ -123,19 +130,22 @@ class OrchestrationService(Cmd):
         
         for host in self.hosts_array:
             host = host.rstrip()
-            
-            # Remove *.db file
-            print("Shutting down {} database...".format(host))
-            subprocess.run(["ssh", host, "cd {}; rm /virtual/*.db".format(CWD)])
+            subprocess.run(["ssh", host, "killall java"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
 
-            # Stop URL Shortener
-            print ("Shutting down {} URL Shortener Service".format(host))
-            subprocess.run(["ssh", host, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.URL_SHORTENER_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
+            # Remove *.db file
+            # print("Shutting down {} database...".format(host))
+            # subprocess.run(["ssh", host, "cd {}; rm /virtual/*.db".format(CWD)])
+
+            # # Stop URL Shortener
+            # print ("Shutting down {} URL Shortener Service".format(host))
+            # subprocess.run(["ssh", host, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.URL_SHORTENER_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
             
-            # Stop Load Balancer
-            print ("Shutting down {} Load Balancer".format(host))
-            subprocess.run(["ssh", host, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.LOAD_BALANCER_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
+            # # Stop Load Balancer
+            # print ("Shutting down {} Load Balancer".format(host))
+            # subprocess.run(["ssh", host, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.LOAD_BALANCER_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
     
+        self.has_started = False
+
     def service_status(self, serviceName, hostName, servicePort, proxyOutput, outputBuilder):
         if proxyOutput == b'':
             outputBuilder.append("{} \t {}:{} \t DOWN \n".format(serviceName, hostName, servicePort))
