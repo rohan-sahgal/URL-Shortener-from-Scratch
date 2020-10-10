@@ -32,7 +32,7 @@ public class URLShortnerSQL {
 			stmt = connect.createStatement();
 			String sql = "CREATE TABLE IF NOT EXISTS URLS " +
 										"(SHORT TEXT PRIMARY KEY NOT NULL," +
-										" LONG TEXT NOT NULL)"; 
+										" LONG TEXT NOT NULL);"; 
 			stmt.executeUpdate(sql);
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
@@ -57,7 +57,7 @@ public class URLShortnerSQL {
 			connect = DriverManager.getConnection(this.URL);
 			System.out.println("Connection to SQLite has been established.");
 			stmt = connect.createStatement();
-			String sql = String.format("INSERT INTO URLS (SHORT, LONG) VALUES (\"%s\", %s) ON CONFLICT(SHORT) DO UPDATE SET LONG=%s;", shortURL, longURL, longURL);
+			String sql = String.format("INSERT INTO URLS (SHORT, LONG) VALUES (%s, %s) ON CONFLICT(SHORT) DO UPDATE SET LONG=%s;", shortURL, longURL, longURL);
 			stmt.executeUpdate(sql);
 			System.out.println("Records created successfully");
 		} catch (SQLException e) {
@@ -129,7 +129,7 @@ public class URLShortnerSQL {
 			connect = DriverManager.getConnection(this.URL);
 			System.out.println("Connection to SQLite has been established.");
 			stmt = connect.createStatement();
-			ResultSet rs = stmt.executeQuery(String.format("SELECT LONG FROM URLS WHERE SHORT=\"%s\";", shortURL));
+			ResultSet rs = stmt.executeQuery(String.format("SELECT LONG FROM URLS WHERE SHORT=%s;", shortURL));
 			while (rs.next()) {
 				longURL = rs.getString("LONG");
 			}
