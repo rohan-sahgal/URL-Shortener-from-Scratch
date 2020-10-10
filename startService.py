@@ -8,11 +8,6 @@ import sys
 
 class OrchestrationService(Cmd):
 
-    def signal_handler(self, sig, frame):
-        pass
-        # print("you pressed ctrl C")
-        # sys.exit(0)
-
     def __init__(self):
         super(OrchestrationService, self).__init__()
     
@@ -31,7 +26,6 @@ class OrchestrationService(Cmd):
         signal.signal(signal.SIGINT, self.signal_handler)
 
         
-
     prompt = '> '
     intro = "Orchestration Service for CSC409. Type ? to list commands"
     
@@ -99,7 +93,7 @@ class OrchestrationService(Cmd):
     def do_status(self, input):
         '''# Monitor the proxy, database, load balancer and URLShortener service
         '''
-        proxyBuilder = ["Proxy Status:\n"]
+        proxyBuilder = ["\nProxy Status:\n"]
         lbBuilder = ["\nLoad Balancer Status:\n"]
         urlBuilder = ["\nURL Shortener Status:\n"]
         dbBuilder = ["\nDatabase Status:\n"]
@@ -152,9 +146,9 @@ class OrchestrationService(Cmd):
 
     def service_status(self, serviceName, hostName, servicePort, proxyOutput, outputBuilder):
         if proxyOutput == b'':
-            outputBuilder.append("{} \t {}:{} \t DOWN \n".format(serviceName, hostName, servicePort))
+            outputBuilder.append("{:<20}{}:{:<5} \t DOWN \n".format(serviceName, hostName, servicePort))
         else:
-            outputBuilder.append("{} \t {}:{} \t UP \n".format(serviceName, hostName, servicePort))
+            outputBuilder.append("{:<20}{}:{:<5} \t UP \n".format(serviceName, hostName, servicePort))
 
     def compile_java_files(self):
         print ("Compiling java executables")
@@ -171,7 +165,11 @@ class OrchestrationService(Cmd):
           if not os.path.exists(DBPACKAGE_OUT_DIR):
               os.mkdir(DBPACKAGE_OUT_DIR)
         except OSError:
-          print("Creation of the directories failed")                    
+          print("Creation of the directories failed")            
+
+    def signal_handler(self, sig, frame):
+        ''' Signal handler (captures SIGINT/ctrl + c) for the monitor command'''
+        pass
                 
     def do_exit(self, input):
         '''Exit the service.'''
