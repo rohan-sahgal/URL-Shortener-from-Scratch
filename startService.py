@@ -4,7 +4,11 @@ from cmd import Cmd
 from subprocess import PIPE
 import subprocess, os, time
 import signal
+import socket
 import sys
+import errno
+from contextlib import closing
+
 
 class OrchestrationService(Cmd):
 
@@ -39,6 +43,9 @@ class OrchestrationService(Cmd):
     def do_start(self, input):
         '''# Setup/start the database, proxy, load balancers and URLShortener
         service on all hosts defined in the `host` file.'''
+
+   
+
         
         # Create out directories
         self.make_output_directories()
@@ -57,10 +64,18 @@ class OrchestrationService(Cmd):
             argsProxy += host + " " + str(self.LOAD_BALANCER_PORT) + " " + "1" + " " + host_range + " "
 
         firstHost = self.hosts_array[0]
-        
+
+        #check if ports are available
+        self.stop_servers(self.hosts_array, CWD, p=False)
+
         # Setup Proxy Server
-        print ("Starting up {} proxy server".format(firstHost))
-        subprocess.run(["ssh", firstHost, "cd {}/proxy; nohup java MultiThreadedProxy {} 4 {} > out/proxy{}.out 2>out/proxy{}.error < /dev/null &".format(CWD, self.PROXY_PORT, argsProxy, firstHost, firstHost)])
+        if (self.check_socket(firstHost, self.PROXY_PORT)):
+            print ("Starting up {} proxy server".format(firstHost))
+            subprocess.run(["ssh", firstHost, "cd {}/proxy; nohup java MultiThreadedProxy {} 4 {} > out/proxy{}.out 2>out/proxy{}.error < /dev/null &".format(CWD, self.PROXY_PORT, argsProxy, firstHost, firstHost)])
+        else:
+            print("Cannot start proxy on {}:{} - port may already be in use".format(firstHost, self.PROXY_PORT))
+        
+
         
         n = 1
         for host in self.hosts_array:
@@ -73,17 +88,32 @@ class OrchestrationService(Cmd):
             # subprocess.run(["ssh", host, "cd {}/dbpackage/; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' MakeDB url{}.db jdbc:sqlite:/virtual/".format(CWD, n)], stdout=subprocess.DEVNULL)
             
             # Setup Load Balancer
-            print("Starting up {} load balancer".format(host))
-            subprocess.run(["ssh", host, "cd {}/proxy; nohup java MultiThreadedLB {} 4 {} > out/LB{}.out 2>out/LB{}.error < /dev/null &".format(CWD, self.LOAD_BALANCER_PORT, argsLB, host, host)])
-        
+            if (self.check_socket(host, self.LOAD_BALANCER_PORT)):
+                print("Starting up {} load balancer".format(host))
+                subprocess.run(["ssh", host, "cd {}/proxy; nohup java MultiThreadedLB {} 4 {} > out/LB{}.out 2>out/LB{}.error < /dev/null &".format(CWD, self.LOAD_BALANCER_PORT, argsLB, host, host)])
+            else: 
+                print("Cannot start LB on {}:{} - port may already be in use".format(host, self.LOAD_BALANCER_PORT))
+            
             # Setup URL Shortener
-            print("Starting up {} URL Shortener service".format(host))
-            subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, n, host, host)])
-                
-            n += 1
+            if (self.check_socket(host, self.URL_SHORTENER_PORT)):
+                print("Starting up {} URL Shortener service".format(host))
+                subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, n, host, host)])
+            else: 
+                print("Cannot start URL Shortener on {}:{} - port may already be in use".format(host, self.URL_SHORTENER_PORT))
+                n += 1
         
         self.has_started = True
     
+    def check_socket(self, host, port):
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+            if sock.connect_ex((host, port)) == 0:
+                # port unvailable
+                return False
+            else:
+                # port available
+                return True
+
+
     def do_monitor(self, input):
         '''# Monitor '''
         if (self.has_started):
@@ -115,7 +145,18 @@ class OrchestrationService(Cmd):
         
         print(''.join(str(x) for x in (proxyBuilder + lbBuilder + urlBuilder)))
 
+    def stop_servers(self, hosts, cwd, p):
+        for host in self.hosts_array:
+            host = host.rstrip()
 
+            # Kills all java servers
+            if p: print("Shutting down servers on {}...".format(host))
+            subprocess.run(["ssh", host, "killall java"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
+
+            # Remove *.db file
+            if p: 
+                print("Shutting down {} database...".format(host))
+                subprocess.run(["ssh", host, "cd {}; rm /virtual/*.db".format(cwd)])
 
     def do_stop(self, input):
         '''# Stop the database, proxy, load balancers and URLShortener service 
@@ -125,16 +166,7 @@ class OrchestrationService(Cmd):
         # Stop proxy server
         print("Shutting down all java servers and removing databases...\n")
         
-        for host in self.hosts_array:
-            host = host.rstrip()
-
-            # Kills all java servers
-            print("Shutting down servers on {}...".format(host))
-            subprocess.run(["ssh", host, "killall java"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
-
-            # Remove *.db file
-            print("Shutting down {} database...".format(host))
-            subprocess.run(["ssh", host, "cd {}; rm /virtual/*.db".format(CWD)])
+        self.stop_servers(self.hosts_array, CWD, True)
             
         print("Servers successfully shut down.")
         self.has_started = False
