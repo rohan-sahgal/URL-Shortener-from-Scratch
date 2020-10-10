@@ -200,6 +200,7 @@ public class LBThread extends Thread {
           final InputStream streamFromServerBackup = serverBackup.getInputStream();
           final BufferedWriter streamToServerBackup = new BufferedWriter(new OutputStreamWriter(serverBackup.getOutputStream()));
           if (isPut && serverBackup != server) {
+            System.out.println("GET in backup");
             Thread tBackup = new Thread() {
               public void run() {
                 int bytesRead;
