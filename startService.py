@@ -89,7 +89,7 @@ class OrchestrationService(Cmd):
         if (self.has_started):
             subprocess.run("python3 startMonitoring.py", shell=True)
         else:
-            print("Please start the service before monitoring\n")
+            print("Please restart the services before monitoring.\n")
 
     def do_status(self, input):
         '''# Monitor the proxy, database, load balancer and URLShortener service
