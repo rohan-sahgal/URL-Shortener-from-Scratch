@@ -27,7 +27,7 @@ def init_hosts(hosts):
         for host in hosts_file:
             host_range = host.rstrip().split(" ")
             print(host_range)
-            hosts.append(host_range[0])
+            hosts_array.append(host_range[0])
             hosts_ranges.append(host_range[1])
             
     if len(hosts) == 0:
