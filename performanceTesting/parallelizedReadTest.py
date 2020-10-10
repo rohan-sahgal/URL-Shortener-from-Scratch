@@ -9,7 +9,7 @@ pool_size = 8
 
 def worker(i):
     try:
-        request="http://localhost:8000/{}".format(i)
+        request="http://dh2010pc31:8010/{}".format("10")
         subprocess.run(["curl", "-X", "GET", request], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     except Exception as e:

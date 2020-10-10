@@ -19,13 +19,17 @@ class OrchestrationService(Cmd):
         self.hosts_array = []
         self.hosts_ranges_start = []
         self.hosts_ranges_end = []
+        self.range_exists = False
         with open('hosts') as hosts_file:
             for host in hosts_file:
                 host_range = host.rstrip().split(" ")
                 self.hosts_array.append(host_range[0])
                 self.hosts_ranges_start.append(host_range[1])
                 self.hosts_ranges_end.append(host_range[2])
-                
+                if (host_range[1] == '0' and host_range[2] == '255'):
+                    self.range_exists = True
+        if self.range_exists == False:
+            raise Exception('Error: No backup host specified')
         if len(self.hosts_array) == 0:
             raise Exception('Error: No hosts specified in the host file.')
 
