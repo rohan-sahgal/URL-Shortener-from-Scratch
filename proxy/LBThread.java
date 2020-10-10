@@ -15,7 +15,6 @@ public class LBThread extends Thread {
     private ProxyTripleList triples = null;
     private ProxyTriple backup = null;
     private ProxyTriple currentServer = null;
-    private boolean isPut = false;
     
 
     public LBThread(Work w, ProxyTripleList triples) {			
@@ -63,7 +62,7 @@ public class LBThread extends Thread {
       Socket server = null;
       Socket serverBackup = null;
       try {
-
+          boolean isPut = false;
           // client input streams and buffers
           InputStream streamFromClient = socket.getInputStream();
           BufferedReader in = new BufferedReader(new InputStreamReader(streamFromClient));
@@ -200,7 +199,6 @@ public class LBThread extends Thread {
           final InputStream streamFromServerBackup = serverBackup.getInputStream();
           final BufferedWriter streamToServerBackup = new BufferedWriter(new OutputStreamWriter(serverBackup.getOutputStream()));
           if (isPut && serverBackup != server) {
-            System.out.println("GET in backup");
             Thread tBackup = new Thread() {
               public void run() {
                 int bytesRead;
