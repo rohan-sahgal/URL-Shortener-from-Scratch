@@ -35,21 +35,28 @@ public class URLShortnerThread extends Thread {
 	// verbose mode
 	private boolean verbose = true;
 	private URLShortnerSQL sql = null;
-	private ReadWriteLock readWriteLock = null;
+	private URLCache cache = null;
+	private ReadWriteLock readWriteLockDB = null;
+	private ReadWriteLock readWriteLockCache = null;
 	private Socket connect = null;
 	private int numBuckets = 100;
 
-	public URLShortnerThread(Socket connect, URLShortnerSQL sql, ReadWriteLock readWriteLock, boolean verbose) {			
+	public URLShortnerThread(Socket connect, URLShortnerSQL sql, URLCache cache, ReadWriteLock readWriteLockDB, ReadWriteLock readWriteLockCache, boolean verbose) {			
     super("URLShortnerThread");
     this.connect = connect;
-    this.sql =  sql;
-		this.readWriteLock = readWriteLock;
+		this.sql =  sql;
+		this.cache =  cache;
+		this.readWriteLockDB = readWriteLockDB;
+		this.readWriteLockCache = readWriteLockCache;
 		this.verbose = verbose;
   }
 
 	public void run() {
     try {
+			long startTime = System.nanoTime();
 			handle();
+			long endTime = System.nanoTime();
+      System.out.println("TIME: " + Long.toString((endTime - startTime) / 1000000) + "ms");
     } catch (Exception e) {
       System.err.println(e);
     }
@@ -74,9 +81,9 @@ public class URLShortnerThread extends Thread {
 				String httpVersion=mput.group(3);
 				int hash = getBucket(shortResource);
 				
-				readWriteLock.writeLock().lock();
+				readWriteLockDB.writeLock().lock();
 				sql.insert(shortResource, longResource);
-				readWriteLock.writeLock().unlock();
+				readWriteLockDB.writeLock().unlock();
 
 				File file = new File(WEB_ROOT, REDIRECT_RECORDED);
 				int fileLength = (int) file.length();
@@ -104,9 +111,17 @@ public class URLShortnerThread extends Thread {
 					String httpVersion=mget.group(3);
 					int hash = getBucket(shortResource);
 
-					readWriteLock.readLock().lock();
-					String longResource = sql.select(shortResource);
-					readWriteLock.readLock().unlock();
+					String longResource = null;
+					readWriteLockCache.writeLock().lock();
+					if ((longResource = cache.get(shortResource)) == null) {
+						readWriteLockDB.readLock().lock();
+						longResource = sql.select(shortResource);
+						readWriteLockDB.readLock().unlock();
+					}
+					if (longResource != null) {
+						cache.add(shortResource, longResource);
+					}
+					readWriteLockCache.writeLock().unlock();
 
 					if (longResource != null) {
 						File file = new File(WEB_ROOT, REDIRECT);

@@ -35,6 +35,9 @@ public class URLShortner {
 	// verbose mode
 	static final boolean verbose = true;
 
+	// cache size
+	static final int cache_size = 10;
+
 	public static void main(String[] args) {
 
 		if ((args.length != 3)){
@@ -52,12 +55,15 @@ public class URLShortner {
 			URLShortnerSQL sql = new URLShortnerSQL(url);
 			sql.setupDB();
 
-			ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+			URLCache cache = new URLCache(cache_size);
+
+			ReadWriteLock readWriteLockDB = new ReentrantReadWriteLock();
+			ReadWriteLock readWriteLockCache = new ReentrantReadWriteLock();
 
 			// we listen until user halts server execution
 			while (true) {
 				if (verbose) { System.out.println("Connecton opened. (" + new Date() + ")"); }
-				new URLShortnerThread(serverConnect.accept(), sql, readWriteLock, true).start();
+				new URLShortnerThread(serverConnect.accept(), sql, cache, readWriteLockDB, readWriteLockCache, true).start();
 			}
 		} catch (IOException e) {
 			System.err.println("Server Connection error : " + e.getMessage());

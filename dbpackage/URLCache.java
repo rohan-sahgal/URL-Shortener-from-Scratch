@@ -1,115 +1,67 @@
-// import java.util.ArrayList;
-// import java.util.HashMap;
-import java.util.*;
-import java.io.*;
-// import org.apache.commons.collections.MapIterator;
-// import org.apache.commons.collections.map.LRUMap;
- 
- 
+import java.util.HashMap;
+
+// LRU Cache
 public class URLCache {
- 
-    private long timeToLive;
-    private HashMap<String, CacheObject> cacheMap;
- 
-    protected class CacheObject {
-        public long lastAccessed = System.currentTimeMillis();
-        public String value;
- 
-        protected CacheObject(String value) {
-            this.value = value;
-        }
-    }
- 
-    public URLCache(long TimeToLive, final long TimerInterval, int maxItems) {
-        this.timeToLive = TimeToLive * 1000;
- 
-        cacheMap = new HashMap<String, CacheObject>(maxItems);
- 
-        if (timeToLive > 0 && TimerInterval > 0) {
- 
-            Thread t = new Thread(new Runnable() {
-                public void run() {
-                    while (true) {
-                        try {
-                            Thread.sleep(TimerInterval * 1000);
-                        } catch (InterruptedException ex) {
-                        }
-                        cleanup();
-                    }
-                }
-            });
- 
-            t.setDaemon(true);
-            t.start();
-        }
-    }
- 
-    public void put(String shortURL, String longURL) {
-        synchronized (cacheMap) {
-            cacheMap.put(shortURL, new CacheObject(longURL));
-        }
-    }
- 
-    @SuppressWarnings("unchecked")
-    public String get(String shortURL) {
-        synchronized (cacheMap) {
-            CacheObject c = (CacheObject) cacheMap.get(shortURL);
- 
-            if (c == null)
-                return null;
-            else {
-                c.lastAccessed = System.currentTimeMillis();
-                return c.value;
-            }
-        }
-    }
- 
-    public void remove(String shortURL) {
-        synchronized (cacheMap) {
-            cacheMap.remove(shortURL);
-        }
-    }
- 
-    public int size() {
-        synchronized (cacheMap) {
-            return cacheMap.size();
-        }
-    }
- 
-    @SuppressWarnings("unchecked")
-    public void cleanup() {
- 
-        long now = System.currentTimeMillis();
-        ArrayList<String> deleteKey = null;
- 
-        synchronized (cacheMap) {
-            // MapIterator itr = cacheMap.mapIterator();
-            Iterator hashMapIterator = cacheMap.entrySet().iterator();
-            // Iterator hashMapIterator = cacheMap.keySet().iterator();
+	HashMap<String, Node> cache;
+	int size;
+	Node head;
+	Node tail;
 
-            deleteKey = new ArrayList<String>((cacheMap.size() / 2) + 1);
-            String key = null;
-            CacheObject c = null;
+	public URLCache(int size) {
+		this.size = size;
+		cache = new HashMap<>();
+		head = null;
+		tail = null;
+	}
 
-            while (hashMapIterator.hasNext()) {
-                
-                // key = (String) hashMapIterator.next();
-                Map.Entry mapElement = (Map.Entry)hashMapIterator.next();
-                c = (CacheObject) mapElement.getValue();
-                key = (String) mapElement.getKey();
- 
-                if (c != null && (now > (timeToLive + c.lastAccessed))) {
-                    deleteKey.add(key);
-                }
-            }
-        }
- 
-        for (String key : deleteKey) {
-            synchronized (cacheMap) {
-                cacheMap.remove(key);
-            }
- 
-            Thread.yield();
-        }
+	public void add(String key, String value) {
+        Node node = new Node(key, value);
+		if (cache.size() == 0) {
+			head = node;
+			tail = node;
+		} else {
+			if (cache.size() == this.size) {
+				remove(this.tail);
+			}
+			node.next = this.head;
+			this.head.prev = node;
+			head = node;
+		}
+		cache.put(key, node);
     }
+    
+    public String get(String key) {
+		if (cache.containsKey(key)) {
+			Node node = cache.get(key);
+            remove(node);
+			return node.value;
+		}
+		return null;
+	}
+
+	private void remove(Node node) {
+		if (this.head == node)
+			this.head = node.next;
+		if (this.tail == node)
+			this.tail = node.prev;
+		if (node.prev != null)
+			node.prev.next = node.next;
+		if (node.next != null)
+			node.next.prev = node.prev;
+		cache.remove(node.key);
+	}
+}
+
+class Node {
+	String key;
+	String value;
+	Node next;
+	Node prev;
+
+	public Node(String key, String value) {
+		this.key = key;
+		this.value = value;
+		this.next= null;
+		this.prev = null;
+	}
 }
