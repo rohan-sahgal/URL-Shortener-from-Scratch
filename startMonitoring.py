@@ -10,7 +10,8 @@ LOAD_BALANCER_PORT = 8004
 URL_SHORTENER_PORT = 8005
 
 hosts_array = []
-hosts_ranges = []
+hosts_ranges_start = []
+hosts_ranges_end = []
 
 CWD = os.getcwd()
 
@@ -28,7 +29,8 @@ def init_hosts(hosts_array):
             host_range = host.rstrip().split(" ")
             print(host_range)
             hosts_array.append(host_range[0])
-            hosts_ranges.append(host_range[1])
+            hosts_ranges_start.append(host_range[1])
+            hosts_ranges_end.append(host_range[2])
             
     if len(hosts_array) == 0:
         raise Exception('Error: No hosts specified in the host file.')
@@ -59,10 +61,11 @@ init_hosts(hosts_array)
 argsLB, argsProxy = "", ""
 for i in range(len(hosts_array)):
     host = hosts_array[i].rstrip()
-    host_range = hosts_ranges[i].rstrip()
+    host_range_start = hosts_ranges_start[i].rstrip()
+    host_range_end = hosts_ranges_end[i].rstrip()
     
-    argsLB += host + " " + str(URL_SHORTENER_PORT) + " " + "1" + " " + host_range + " "
-    argsProxy += host + " " + str(LOAD_BALANCER_PORT) + " " + "1" + " " + host_range + " "
+    argsLB += host + " " + str(URL_SHORTENER_PORT) + " " + "1" + " " + host_range_start + " " + host_range_end + " "
+    argsProxy += host + " " + str(LOAD_BALANCER_PORT) + " " + "1" + " " + host_range_start + " " + host_range_end + " "
 
 signal.signal(signal.SIGINT, signal_handler)
 

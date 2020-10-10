@@ -6,11 +6,16 @@ import java.util.*;
 import java.io.BufferedReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.math.BigInteger; 
+import java.security.MessageDigest; 
+import java.security.NoSuchAlgorithmException; 
 
 public class LBThread extends Thread {  
     private Work w = null;
-    private int numBuckets = 100;
     private ProxyTripleList triples = null;
+    private ProxyTriple backup = null;
+    private ProxyTriple currentServer = null;
+    private boolean isPut = false;
     
 
     public LBThread(Work w, ProxyTripleList triples) {			
@@ -56,6 +61,7 @@ public class LBThread extends Thread {
       System.out.println("client connected to proxy");
 
       Socket server = null;
+      Socket serverBackup = null;
       try {
 
           // client input streams and buffers
@@ -102,8 +108,8 @@ public class LBThread extends Thread {
               return;
           }
 
-          int bucketIndex = getBucket(shortResource);
-          if (bucketIndex == -1) {
+          getServers(shortResource);
+          if (currentServer == null && backup == null) {
               System.err.println("Server error");
               PrintWriter out = new PrintWriter(streamToClient);
               out.print("Proxy got a Server error\n");
@@ -112,7 +118,6 @@ public class LBThread extends Thread {
               return;
           }
           
-          ProxyTriple currentServer = triples.getByBucket(bucketIndex);
           String host = currentServer.host;
           int remoteport = currentServer.port;
 
@@ -123,14 +128,29 @@ public class LBThread extends Thread {
           // client, disconnect, and continue waiting for connections.
           try {
             server = new Socket(host, remoteport);
+            serverBackup = server;
             System.out.println("Connected to real server " + host + ":" + remoteport);
+            if (isPut) {
+              try {
+                serverBackup = new Socket(backup.host, backup.port);
+                System.out.println("Connected to back server " + backup.host + ":" + backup.port);
+              } catch (IOException e) {}
+            }
           } catch (IOException e) {
-            PrintWriter out = new PrintWriter(streamToClient);
-            out.print("Proxy server cannot connect to " + host + ":"
-                + remoteport + ":\n" + e + "\n");
-            out.flush();
-            socket.close();
-            return;
+            System.out.println("Proxy server cannot connect to " + host + ":"
+              + remoteport + ":\n" + e + "\n");
+            try {
+              server = new Socket(backup.host, backup.port);
+              serverBackup = server;
+              System.out.println("Connected to back server " + backup.host + ":" + backup.port);
+            } catch (IOException ex) {
+              PrintWriter out = new PrintWriter(streamToClient);
+              out.print("Proxy server cannot connect to " + host + ":"
+                  + remoteport + ":\n" + ex + "\n");
+              out.flush();
+              socket.close();
+              return;
+            }
           }
 
           // Get server streams.
@@ -164,17 +184,38 @@ public class LBThread extends Thread {
 
               // the client closed the connection to us, so close our
               // connection to the server.
-              // try {
-              //   //outToServer.close();
+              try {
+                outToServer.close();
               //   streamToServer.close();
-              // } catch (IOException e) {
-              //   System.err.println("Thread : " + e.getMessage());
-              // }
+              } catch (IOException e) {
+                System.err.println("Thread : " + e.getMessage());
+              }
             }
           };
 
           // Start the client-to-server request thread running
           t.start();
+
+          final InputStream streamFromServerBackup = serverBackup.getInputStream();
+          final BufferedWriter streamToServerBackup = new BufferedWriter(new OutputStreamWriter(serverBackup.getOutputStream()));
+          if (isPut && serverBackup != server) {
+            Thread tBackup = new Thread() {
+              public void run() {
+                int bytesRead;
+                try {
+                  streamToServerBackup.write(request);
+                  streamToServerBackup.write("\n");
+                  streamToServerBackup.flush();
+                } catch (IOException e) {
+                }
+                try {
+                  streamToServerBackup.close();
+                } catch (IOException e) {
+                }
+              }
+            };
+            tBackup.start();
+          }
 
           // Read the server's responses
           // and pass them back to the socket.
@@ -193,7 +234,13 @@ public class LBThread extends Thread {
           } catch (IOException e) {
             System.err.println("halfway : " + e.getMessage());
             e.printStackTrace();
-          } 
+          }
+
+          if (isPut && serverBackup != server) {
+            while (streamFromServerBackup.read(reply) != -1) {
+              continue;
+            }
+          }
 
           // The server closed its connection to us, so we close our
           // connection to our socket.
@@ -204,6 +251,8 @@ public class LBThread extends Thread {
           try {
             if (server != null)
               server.close();
+            if (serverBackup != null)
+              serverBackup.close();
             if (socket != null)
               socket.close();
           } catch (IOException e) {
@@ -212,11 +261,27 @@ public class LBThread extends Thread {
 
     }
 
-    public int getBucket(String shortResource) {
-      if (shortResource == null) return -1;
-
-      int hash = shortResource.hashCode();
-      return Math.abs(hash % numBuckets);
+    public void getServers(String shortResource) {
+      try {
+        // MD5 hashing the short
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        byte[] messageDigest = md.digest(shortResource.getBytes());
+        BigInteger number = new BigInteger(1, messageDigest);
+        int hash = number.and(new BigInteger("255")).intValue();
+        for (int i = 0; i < this.triples.size(); i++) {
+          ProxyTriple temp = this.triples.get(i);
+          if (temp.rangeStart == 0 && temp.rangeEnd == 255) {
+            backup = temp;
+            continue;
+          }
+          if (hash >= temp.rangeStart && hash <= temp.rangeEnd) {
+            currentServer = temp;
+            break;
+          }
+        }
+      } catch (NoSuchAlgorithmException e) { 
+        System.out.println(e.getMessage());
+      }
     }
 
   }

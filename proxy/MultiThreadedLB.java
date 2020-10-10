@@ -9,8 +9,8 @@ import java.util.ArrayList;
 public class MultiThreadedLB {
     public static void main(String[] args) {
         
-        if ((args.length < 5) || ((args.length - 2) % 4 != 0)){
-            throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java MultiThreadedLB [local port] [threads] [remote host] [remote port] [weight] [range]");
+        if ((args.length < 7) || ((args.length - 2) % 5 != 0)){
+            throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java MultiThreadedLB [local port] [threads] [remote host] [remote port] [weight] [range_start] [range_end]");
         }
 
         ProxyTripleList triples = new ProxyTripleList();
@@ -24,14 +24,16 @@ public class MultiThreadedLB {
             String host;
             int localport;
             int weight;
-            String range;
+            int rangeStart;
+            int rangeEnd;
 
             try {
                 host = args[j++];
                 localport = Integer.parseInt(args[j++]);
                 weight = Integer.parseInt(args[j++]);
-                range = args[j++];
-                triples.add(new ProxyTriple(host, localport, weight, range));
+                rangeStart = Integer.parseInt(args[j++]);
+                rangeEnd = Integer.parseInt(args[j++]);
+                triples.add(new ProxyTriple(host, localport, weight, rangeStart, rangeEnd));
             } catch (NumberFormatException e) {
                 System.err.println("port or weight not a number");
                 System.exit(-1);

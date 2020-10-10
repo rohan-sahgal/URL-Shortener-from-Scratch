@@ -18,12 +18,14 @@ class OrchestrationService(Cmd):
     
         # Read file into an array once.
         self.hosts_array = []
-        self.hosts_ranges = []
+        self.hosts_ranges_start = []
+        self.hosts_ranges_end = []
         with open('hosts') as hosts_file:
             for host in hosts_file:
                 host_range = host.rstrip().split(" ")
                 self.hosts_array.append(host_range[0])
-                self.hosts_ranges.append(host_range[1])
+                self.hosts_ranges_start.append(host_range[1])
+                self.hosts_ranges_end.append(host_range[2])
                 
         if len(self.hosts_array) == 0:
             raise Exception('Error: No hosts specified in the host file.')
@@ -35,9 +37,9 @@ class OrchestrationService(Cmd):
     prompt = '> '
     intro = "Orchestration Service for CSC409. Type ? to list commands"
     
-    PROXY_PORT = 8000
-    LOAD_BALANCER_PORT = 8001
-    URL_SHORTENER_PORT = 8002
+    PROXY_PORT = 8008
+    LOAD_BALANCER_PORT = 8009
+    URL_SHORTENER_PORT = 8010
 
     has_started = False
 
@@ -56,10 +58,11 @@ class OrchestrationService(Cmd):
         argsLB, argsProxy = "", ""
         for i in range(len(self.hosts_array)):
             host = self.hosts_array[i].rstrip()
-            host_range = self.hosts_ranges[i].rstrip()
+            host_range_start = self.hosts_ranges_start[i].rstrip()
+            host_range_end = self.hosts_ranges_end[i].rstrip()
             
-            argsLB += host + " " + str(self.URL_SHORTENER_PORT) + " " + "1" + " " + host_range + " "
-            argsProxy += host + " " + str(self.LOAD_BALANCER_PORT) + " " + "1" + " " + host_range + " "
+            argsLB += host + " " + str(self.URL_SHORTENER_PORT) + " " + "1" + " " + host_range_start + " " + host_range_end + " "
+            argsProxy += host + " " + str(self.LOAD_BALANCER_PORT) + " " + "1" + " " + host_range_start + " " + host_range_end + " "
 
         firstHost = self.hosts_array[0]
         
