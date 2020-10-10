@@ -137,16 +137,16 @@ class OrchestrationService(Cmd):
             subprocess.run(["ssh", host, "killall java"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
 
             # Remove *.db file
-            # print("Shutting down {} database...".format(host))
-            # subprocess.run(["ssh", host, "cd {}; rm /virtual/*.db".format(CWD)])
+            print("Shutting down {} database...".format(host))
+            subprocess.run(["ssh", host, "cd {}; rm /virtual/*.db".format(CWD)])
 
-            # # Stop URL Shortener
-            # print ("Shutting down {} URL Shortener Service".format(host))
-            # subprocess.run(["ssh", host, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.URL_SHORTENER_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
+            # Stop URL Shortener
+            print ("Shutting down {} URL Shortener Service".format(host))
+            subprocess.run(["ssh", host, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.URL_SHORTENER_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
             
             # # Stop Load Balancer
-            # print ("Shutting down {} Load Balancer".format(host))
-            # subprocess.run(["ssh", host, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.LOAD_BALANCER_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
+            print ("Shutting down {} Load Balancer".format(host))
+            subprocess.run(["ssh", host, "kill $(lsof -i -P | grep {} | cut -d' ' -f5)".format(self.LOAD_BALANCER_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
     
         self.has_started = False
 
