@@ -26,6 +26,7 @@ def init_hosts(hosts_array):
     with open('hosts') as hosts_file:
         for host in hosts_file:
             host_range = host.rstrip().split(" ")
+            print(host_range)
             hosts_array.append(host_range[0])
             hosts_ranges.append(host_range[1])
             
@@ -56,9 +57,9 @@ def service_status(serviceName, hostName, servicePort, proxyOutput):
 init_hosts(hosts_array)
 
 argsLB, argsProxy = "", ""
-for i in range(len(self.hosts_array)):
-    host = self.hosts_array[i].rstrip()
-    host_range = self.hosts_ranges[i].rstrip()
+for i in range(len(hosts_array)):
+    host = hosts_array[i].rstrip()
+    host_range = hosts_ranges[i].rstrip()
     
     argsLB += host + " " + str(URL_SHORTENER_PORT) + " " + "1" + " " + host_range + " "
     argsProxy += host + " " + str(LOAD_BALANCER_PORT) + " " + "1" + " " + host_range + " "
