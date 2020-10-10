@@ -5,9 +5,9 @@ import subprocess, os, time
 import signal
 import sys
 
-PROXY_PORT = 8003
-LOAD_BALANCER_PORT = 8004
-URL_SHORTENER_PORT = 8005
+PROXY_PORT = 8000
+LOAD_BALANCER_PORT = 8001
+URL_SHORTENER_PORT = 8002
 
 hosts_array = []
 hosts_ranges_start = []
@@ -22,20 +22,19 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def init_hosts(hosts_array):
+def init_hosts(hosts):
 
     with open('hosts') as hosts_file:
         for host in hosts_file:
             host_range = host.rstrip().split(" ")
-            print(host_range)
             hosts_array.append(host_range[0])
             hosts_ranges_start.append(host_range[1])
             hosts_ranges_end.append(host_range[2])
             
-    if len(hosts_array) == 0:
+    if len(hosts) == 0:
         raise Exception('Error: No hosts specified in the host file.')
 
-    firstHost = hosts_array[0]
+    firstHost = hosts[0]
     
 
 
@@ -70,7 +69,7 @@ for i in range(len(hosts_array)):
 signal.signal(signal.SIGINT, signal_handler)
 
 # Main Loop
-print("Monitoring services that go down...")
+print("Monitoring services that go down...\nPress Ctrl+C to exit.")
 while True:
 
     proxyOutput = subprocess.run(["ssh", hosts_array[0], "lsof -i -P | grep {} | cut -d' ' -f5".format(PROXY_PORT)], stdout=PIPE, stderr=PIPE)
