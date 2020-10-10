@@ -3,8 +3,15 @@
 from cmd import Cmd
 from subprocess import PIPE
 import subprocess, os, time
+import signal
+import sys
 
 class OrchestrationService(Cmd):
+
+    def signal_handler(self, sig, frame):
+        pass
+        # print("you pressed ctrl C")
+        # sys.exit(0)
 
     def __init__(self):
         super(OrchestrationService, self).__init__()
@@ -17,7 +24,11 @@ class OrchestrationService(Cmd):
                 
         if len(self.hosts_array) == 0:
             raise Exception('Error: No hosts specified in the host file.')
+
+        signal.signal(signal.SIGINT, self.signal_handler)
+
         
+
     prompt = '> '
     intro = "Orchestration Service for CSC409. Type ? to list commands"
     
@@ -69,8 +80,12 @@ class OrchestrationService(Cmd):
             subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, n, host, host)])
                 
             n += 1
-
+    
     def do_monitor(self, input):
+        subprocess.run("python3 startMonitoring.py", shell=True)
+
+
+    def do_status(self, input):
         '''# Monitor the proxy, database, load balancer and URLShortener service
         '''
         proxyBuilder = ["Proxy Status:\n"]
@@ -147,6 +162,7 @@ class OrchestrationService(Cmd):
     def do_exit(self, input):
         '''Exit the service.'''
         return True
+
 
 
 OrchestrationService().cmdloop()
