@@ -79,6 +79,7 @@ public class LBThread extends Thread {
 
               if(mput.matches()){
                 shortResource = mput.group(1);
+                isPut = true;
               } 
               else {
                 Pattern pget = Pattern.compile("^(\\S+)\\s+/(\\S+)\\s+(\\S+)$");
