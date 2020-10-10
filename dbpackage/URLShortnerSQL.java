@@ -2,140 +2,153 @@ import java.sql.*;
 
 public class URLShortnerSQL { 
 
-	private static String URL = null;
-	private static Connection connection;
-
-	private static final String REPLACE_STATEMENT = "REPLACE INTO URLS (SHORT,LONG,HASH) VALUES(?,?,?)";
-	private static final String SELECT_ALL = "SELECT * FROM URLS ";
-	private static final String SELECT_BY_SHORT = "SELECT * FROM URLS WHERE SHORT=?";
-	private static final String SELECT_BY_SHORT_N_HASH = "SELECT * FROM URLS WHERE HASH=? AND SHORT=?";
+	private String URL = null;
 
 	public static void main(String[] args) {
 		if ((args.length != 2)){
             throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java URLShortner fullPath fileName");
-        }
-		String fileName = args[0];
-		String url = args[1] + fileName;
-		URLShortnerSQL sql = new URLShortnerSQL(url);
-		sql.insertOrReplace("rohan", "sim", 1);
-		sql.printAll();
-		String longURL = sql.findByShortURL("bby");
-		System.out.println(longURL);
-		longURL = sql.findByShortURL("rohan");
-		System.out.println(longURL);
+    }
+		// String fileName = args[0];
+		// String url = args[1] + fileName;
+		// URLShortnerSQL sql = new URLShortnerSQL(url);
+		// sql.insertOrReplace("rohan", "sim", 1);
+		// sql.printAll();
+		// String longURL = sql.findByShortURL("bby");
+		// System.out.println(longURL);
+		// longURL = sql.findByShortURL("rohan");
+		// System.out.println(longURL);
 	}
 
 	public URLShortnerSQL(String URL) {
 		this.URL = URL;
 	}
 
-	/**
-	* Connects the program to the main SQL database.
-	*
-	* @return a connection to the database
-	*/
-	public static Connection getConnection() {
-
-		if (URLShortnerSQL.connection == null) {
+	public void setupDB() {
+		Statement stmt = null;
+		Connection connect = null;
+		try {
+			connect = DriverManager.getConnection(this.URL);
+			System.out.println("Connection to SQLite has been established.");
+			stmt = connect.createStatement();
+			String sql = "CREATE TABLE IF NOT EXISTS URLS " +
+										"(SHORT TEXT PRIMARY KEY NOT NULL," +
+										" LONG TEXT NOT NULL)"; 
+			stmt.executeUpdate(sql);
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		} finally {
 			try {
-				Class.forName("org.sqlite.JDBC");
-				URLShortnerSQL.connection = DriverManager.getConnection(URLShortnerSQL.URL);
-				System.out.println("Opened database successfully");
-			} catch (Exception e) {
-				System.err.println( e.getClass().getName() + ": " + e.getMessage() );
-				System.exit(0);
+				if (connect != null) {
+					connect.close();
+				}
+				if (stmt != null) {
+					stmt.close();
+				}
+			} catch (SQLException e) {
+				System.out.println(e.getClass().getName() + ": " + e.getMessage());
 			}
 		}
-		return URLShortnerSQL.connection;
 	}
 
-	public static void insertOrReplace(String shortURL,String longURL, int hash) {
-		Connection c = getConnection();
-
+	public void insert(String shortURL, String longURL) {
+		Statement stmt = null;
+		Connection connect = null;
 		try {
-			Class.forName("org.sqlite.JDBC");
-			PreparedStatement preparedStatement = c.prepareStatement(REPLACE_STATEMENT);
-			preparedStatement.setString(1, shortURL);
-    		preparedStatement.setString(2, longURL);
-			preparedStatement.setInt(3, hash);
-			preparedStatement.executeUpdate();
-		} catch ( Exception e ) {
-			System.err.println( e.getClass().getName() + ": " + e.getMessage() );
-			System.exit(0);
+			connect = DriverManager.getConnection(this.URL);
+			System.out.println("Connection to SQLite has been established.");
+			stmt = connect.createStatement();
+			String sql = String.format("INSERT INTO URLS (SHORT, LONG) VALUES (\"%s\", %s) ON CONFLICT(SHORT) DO UPDATE SET LONG=%s;", shortURL, longURL, longURL);
+			stmt.executeUpdate(sql);
+			System.out.println("Records created successfully");
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		} finally {
+			try {
+				if (connect != null) {
+					connect.close();
+				}
+				if (stmt != null) {
+					stmt.close();
+				}
+			} catch (SQLException e) {
+				System.out.println(e.getClass().getName() + ": " + e.getMessage());
+			}
 		}
-		System.out.println("Records created successfully");
 	}
 
-	public static ResultSet selectAll() throws SQLException {
-		Connection c = getConnection();
-    	Statement statement = c.createStatement();
-    	return statement.executeQuery(SELECT_ALL);
-  	}
-	
-	public static void printAll() {
+	public ResultSet selectAll() throws SQLException {
+		Statement stmt = null;
+		Connection connect = null;
+		ResultSet rs = null;
 		try {
-			Class.forName("org.sqlite.JDBC");
-
+			connect = DriverManager.getConnection(this.URL);
+			System.out.println("Connection to SQLite has been established.");
+			stmt = connect.createStatement();
+			rs = stmt.executeQuery("SELECT * FROM URLS;");
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		} finally {
+			try {
+				if (connect != null) {
+					connect.close();
+				}
+				if (stmt != null) {
+					stmt.close();
+				}
+			} catch (SQLException e) {
+				System.out.println(e.getClass().getName() + ": " + e.getMessage());
+			}
+		}
+		return rs;
+  }
+	
+	public void printAll() {
+		try {
 			ResultSet rs = selectAll();
 			
-			while ( rs.next() ) {
-				int id = rs.getInt("id");
+			while (rs != null && rs.next()) {
 				String shortURL = rs.getString("short");
 				String longURL = rs.getString("long");
-				String hash = rs.getString("hash");
 				
-				System.out.println( "ID = " + id );
 				System.out.println( "SHORT = " + shortURL );
 				System.out.println( "LONG = " + longURL );
-				System.out.println( "HASH = " + hash );
 				System.out.println();
 			}
 			rs.close();
-		} catch ( Exception e ) {
-			System.err.println( e.getClass().getName() + ": " + e.getMessage() );
+		} catch (Exception e) {
+			System.err.println(e.getClass().getName() + ": " + e.getMessage());
 		}
-		
 		System.out.println("Operation done successfully");
 	}
 
-	public static ResultSet selectByShortURL(String shortURL) throws SQLException {
-		Connection c = getConnection();
-		PreparedStatement preparedStatement = c.prepareStatement(SELECT_BY_SHORT);
-		preparedStatement.setString(1, shortURL);
-		return preparedStatement.executeQuery();
-	}
-
-	public static String findByShortURL(String shortURL){
+	public String select(String shortURL) {
 		String longURL = null;
+		Statement stmt = null;
+		Connection connect = null;
 		try {
-			ResultSet resultSet = selectByShortURL(shortURL);
-			if (resultSet.next()) {
-				longURL = resultSet.getString("long");
+			connect = DriverManager.getConnection(this.URL);
+			System.out.println("Connection to SQLite has been established.");
+			stmt = connect.createStatement();
+			ResultSet rs = stmt.executeQuery(String.format("SELECT LONG FROM URLS WHERE SHORT=\"%s\";", shortURL));
+			while (rs.next()) {
+				longURL = rs.getString("LONG");
 			}
-		} catch (Exception e) {
-			System.err.println( e.getClass().getName() + ": " + e.getMessage() );
-		} 
-		return longURL;
-	}
-
-	public static ResultSet selectByShortURLHash(String shortURL, int hash) throws SQLException {
-		Connection c = getConnection();
-		PreparedStatement preparedStatement = c.prepareStatement(SELECT_BY_SHORT_N_HASH);
-		preparedStatement.setString(1, shortURL);
-		preparedStatement.setInt(2, hash);
-		return preparedStatement.executeQuery();
-	}
-
-	public static String findByShortURLHash(String shortURL, int hash){
-		String longURL = null;
-		try {
-			ResultSet resultSet = selectByShortURLHash(shortURL, hash);
-			if (resultSet.next()) {
-				longURL = resultSet.getString("long");
+			rs.close();
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		} finally {
+			try {
+				if (connect != null) {
+					connect.close();
+				}
+				if (stmt != null) {
+					stmt.close();
+				}
+			} catch (SQLException e) {
+				System.out.println(e.getClass().getName() + ": " + e.getMessage());
 			}
-		} catch (Exception e) {
-			System.err.println( e.getClass().getName() + ": " + e.getMessage() );
-		} 
+		}
+		System.out.println("Record selected successfully");
 		return longURL;
 	}
 

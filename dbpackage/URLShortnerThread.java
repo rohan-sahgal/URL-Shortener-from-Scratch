@@ -40,20 +40,20 @@ public class URLShortnerThread extends Thread {
 	private int numBuckets = 100;
 
 	public URLShortnerThread(Socket connect, URLShortnerSQL sql, ReadWriteLock readWriteLock, boolean verbose) {			
-        super("URLShortnerThread");
-        this.connect = connect;
-        this.sql =  sql;
+    super("URLShortnerThread");
+    this.connect = connect;
+    this.sql =  sql;
 		this.readWriteLock = readWriteLock;
 		this.verbose = verbose;
-    }
+  }
 
 	public void run() {
-        try {
+    try {
 			handle();
-        } catch (Exception e) {
-            System.err.println(e);
-        }
+    } catch (Exception e) {
+      System.err.println(e);
     }
+  }
 
 	public void handle() {
 		BufferedReader in = null; PrintWriter out = null; BufferedOutputStream dataOut = null;
@@ -75,7 +75,7 @@ public class URLShortnerThread extends Thread {
 				int hash = getBucket(shortResource);
 				
 				readWriteLock.writeLock().lock();
-				sql.insertOrReplace(shortResource, longResource, hash);
+				sql.insert(shortResource, longResource);
 				readWriteLock.writeLock().unlock();
 
 				File file = new File(WEB_ROOT, REDIRECT_RECORDED);
@@ -105,10 +105,10 @@ public class URLShortnerThread extends Thread {
 					int hash = getBucket(shortResource);
 
 					readWriteLock.readLock().lock();
-					String longResource = sql.findByShortURLHash(shortResource, hash);
+					String longResource = sql.select(shortResource);
 					readWriteLock.readLock().unlock();
 
-					if(longResource!=null){
+					if (longResource != null) {
 						File file = new File(WEB_ROOT, REDIRECT);
 						int fileLength = (int) file.length();
 						String contentMimeType = "text/html";

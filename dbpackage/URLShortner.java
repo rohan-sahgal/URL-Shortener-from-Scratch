@@ -38,8 +38,8 @@ public class URLShortner {
 	public static void main(String[] args) {
 
 		if ((args.length != 3)){
-            throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java URLShortner port fullPath fileName");
-        }
+      throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java URLShortner port fullPath fileName");
+    }
 		String fileName = args[1];
 		String url = args[2] + fileName;
 		// port to listen connection
@@ -50,7 +50,7 @@ public class URLShortner {
 			System.out.println("Server started.\nListening for connections on port : " + PORT + " ...\n");
 			
 			URLShortnerSQL sql = new URLShortnerSQL(url);
-			sql.getConnection();
+			sql.setupDB();
 
 			ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
