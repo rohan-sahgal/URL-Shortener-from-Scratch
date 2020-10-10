@@ -10,6 +10,7 @@ LOAD_BALANCER_PORT = 8004
 URL_SHORTENER_PORT = 8005
 
 hosts_array = []
+hosts_ranges = []
 
 CWD = os.getcwd()
 
@@ -24,7 +25,9 @@ def init_hosts(hosts_array):
 
     with open('hosts') as hosts_file:
         for host in hosts_file:
-            hosts_array.append(host.rstrip())
+            host_range = host.rstrip().split(" ")
+            hosts_array.append(host_range[0])
+            hosts_ranges.append(host_range[1])
             
     if len(hosts_array) == 0:
         raise Exception('Error: No hosts specified in the host file.')
@@ -53,11 +56,12 @@ def service_status(serviceName, hostName, servicePort, proxyOutput):
 init_hosts(hosts_array)
 
 argsLB, argsProxy = "", ""
-for host in hosts_array:
-    host = host.rstrip()
+for i in range(len(self.hosts_array)):
+    host = self.hosts_array[i].rstrip()
+    host_range = self.hosts_ranges[i].rstrip()
     
-    argsLB += host + " " + str(URL_SHORTENER_PORT) + " " + "1" + " "
-    argsProxy += host + " " + str(LOAD_BALANCER_PORT) + " " + "1" + " "
+    argsLB += host + " " + str(URL_SHORTENER_PORT) + " " + "1" + " " + host_range + " "
+    argsProxy += host + " " + str(LOAD_BALANCER_PORT) + " " + "1" + " " + host_range + " "
 
 signal.signal(signal.SIGINT, signal_handler)
 
