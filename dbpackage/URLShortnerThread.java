@@ -83,7 +83,7 @@ public class URLShortnerThread extends Thread {
 				readWriteLockDB.writeLock().lock();
 				sql.insert(shortResource, longResource);
 				readWriteLockDB.readLock().lock();
-				longResource = cache.get(shortResource);
+				cache.get(shortResource);
 				readWriteLockDB.readLock().unlock();
 				readWriteLockDB.writeLock().unlock();
 
