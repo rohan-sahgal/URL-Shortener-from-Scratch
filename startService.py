@@ -42,6 +42,7 @@ class OrchestrationService(Cmd):
     PROXY_PORT = 8008
     LOAD_BALANCER_PORT = 8009
     URL_SHORTENER_PORT = 8010
+    CACHE_SIZE = 100
 
     has_started = False
 
@@ -78,7 +79,7 @@ class OrchestrationService(Cmd):
         # Setup Proxy Server
         if (self.check_socket(firstHost, self.PROXY_PORT)):
             print ("Starting up {} proxy server".format(firstHost))
-            subprocess.run(["ssh", firstHost, "cd {}/proxy; nohup java MultiThreadedProxy {} 4 {} > out/proxy{}.out 2>out/proxy{}.error < /dev/null &".format(CWD, self.PROXY_PORT, argsProxy, firstHost, firstHost)])
+            subprocess.run(["ssh", firstHost, "cd {}/proxy; nohup java MultiThreadedProxy {} 8 {} > out/proxy{}.out 2>out/proxy{}.error < /dev/null &".format(CWD, self.PROXY_PORT, argsProxy, firstHost, firstHost)])
         else:
             print("Cannot start proxy on {}:{} - port may already be in use".format(firstHost, self.PROXY_PORT))
         
@@ -97,14 +98,14 @@ class OrchestrationService(Cmd):
             # Setup Load Balancer
             if (self.check_socket(host, self.LOAD_BALANCER_PORT)):
                 print("Starting up {} load balancer".format(host))
-                subprocess.run(["ssh", host, "cd {}/proxy; nohup java MultiThreadedLB {} 4 {} > out/LB{}.out 2>out/LB{}.error < /dev/null &".format(CWD, self.LOAD_BALANCER_PORT, argsLB, host, host)])
+                subprocess.run(["ssh", host, "cd {}/proxy; nohup java MultiThreadedLB {} 8 {} > out/LB{}.out 2>out/LB{}.error < /dev/null &".format(CWD, self.LOAD_BALANCER_PORT, argsLB, host, host)])
             else: 
                 print("Cannot start LB on {}:{} - port may already be in use".format(host, self.LOAD_BALANCER_PORT))
             
             # Setup URL Shortener
             if (self.check_socket(host, self.URL_SHORTENER_PORT)):
                 print("Starting up {} URL Shortener service".format(host))
-                subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, n, host, host)])
+                subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, CACHE_SIZE, n, host, host)])
             else: 
                 print("Cannot start URL Shortener on {}:{} - port may already be in use".format(host, self.URL_SHORTENER_PORT))
                 n += 1

@@ -35,18 +35,16 @@ public class URLShortner {
 	// verbose mode
 	static final boolean verbose = true;
 
-	// cache size
-	static final int cache_size = 10;
-
 	public static void main(String[] args) {
 
-		if ((args.length != 3)){
-      throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java URLShortner port fullPath fileName");
+		if ((args.length != 4)){
+      throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java URLShortner port cacheSize fileName fullPath");
     }
-		String fileName = args[1];
-		String url = args[2] + fileName;
+		String fileName = args[2];
+		String url = args[3] + fileName;
 		// port to listen connection
 		int PORT = Integer.parseInt(args[0]);
+		int CACHE_SIZE = Integer.parseInt(args[1]);
 
 		try {
 			ServerSocket serverConnect = new ServerSocket(PORT);
@@ -55,7 +53,7 @@ public class URLShortner {
 			URLShortnerSQL sql = new URLShortnerSQL(url);
 			sql.setupDB();
 
-			URLCache cache = new URLCache(cache_size);
+			URLCache cache = new URLCache(CACHE_SIZE);
 
 			ReadWriteLock readWriteLockDB = new ReentrantReadWriteLock();
 			ReadWriteLock readWriteLockCache = new ReentrantReadWriteLock();
