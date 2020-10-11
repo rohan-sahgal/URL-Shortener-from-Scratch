@@ -42,6 +42,7 @@ class OrchestrationService(Cmd):
     PROXY_PORT = 8008
     LOAD_BALANCER_PORT = 8009
     URL_SHORTENER_PORT = 8010
+    CACHE_SIZE = 100
 
     has_started = False
 
@@ -104,7 +105,7 @@ class OrchestrationService(Cmd):
             # Setup URL Shortener
             if (self.check_socket(host, self.URL_SHORTENER_PORT)):
                 print("Starting up {} URL Shortener service".format(host))
-                subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, n, host, host)])
+                subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, CACHE_SIZE, n, host, host)])
             else: 
                 print("Cannot start URL Shortener on {}:{} - port may already be in use".format(host, self.URL_SHORTENER_PORT))
                 n += 1
