@@ -22,6 +22,10 @@ t0 = time.time()
 
 for i in range(1000):
     pool.apply_async(worker, (i,))
+
+for i in range(1000):
+    pool.apply_async(worker, (i,))
+
 pool.close()
 pool.join()
 

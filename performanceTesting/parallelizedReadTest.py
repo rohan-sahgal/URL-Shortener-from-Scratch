@@ -9,7 +9,7 @@ pool_size = 8
 
 def worker(i):
     try:
-        request="http://dh2010pc31:8010/{}".format("10")
+        request="http://dh2010pc31:8010/{}".format(1000 + i)
         subprocess.run(["curl", "-X", "GET", request], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     except Exception as e:
@@ -22,9 +22,12 @@ t0 = time.time()
 for i in range(1000):
     pool.apply_async(worker, (i,))
 
+
 pool.close()
 pool.join()
 
 t1 = time.time()
 
 print(t1-t0)
+
+print((t1-t0)/1000)
