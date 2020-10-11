@@ -34,10 +34,6 @@ public class LBThread extends Thread {
 
         try {
             System.out.println("Starting proxy for ...");
-            // Print a start-up message
-            // System.out.println("Starting proxy for " + this.host + ":" + this.remoteport
-            //     + " on port " + 8000);
-            // And start running the server
             while (true) {
               runServer(w.getWork());
             }
@@ -47,7 +43,7 @@ public class LBThread extends Thread {
         }
     }
 
-      /**
+    /**
      * runs a single-threaded proxy server on
      * the specified local port. It never returns.
      */
@@ -72,50 +68,50 @@ public class LBThread extends Thread {
           String shortResource = null;
           String request;
           try {
-              request = in.readLine();
-              Pattern pput = Pattern.compile("^PUT\\s+/\\?short=(\\S+)&long=(\\S+)\\s+(\\S+)$");
-              Matcher mput = pput.matcher(request);
+            request = in.readLine();
+            Pattern pput = Pattern.compile("^PUT\\s+/\\?short=(\\S+)&long=(\\S+)\\s+(\\S+)$");
+            Matcher mput = pput.matcher(request);
 
-              if(mput.matches()){
-                shortResource = mput.group(1);
-                isPut = true;
-              } 
-              else {
-                Pattern pget = Pattern.compile("^(\\S+)\\s+/(\\S+)\\s+(\\S+)$");
-                Matcher mget = pget.matcher(request);
-                if(mget.matches()) {
-                    String method=mget.group(1);
-                    shortResource=mget.group(2);
-                }
-                else {
-                  System.err.println("Invalid request");
-                  PrintWriter out = new PrintWriter(streamToClient);
-                  out.print("Proxy got Invalid request " + request + ":"
-                      + ":\n");
-                  out.flush();
-                  socket.close();
-                  return;
-                }
+            if(mput.matches()){
+              shortResource = mput.group(1);
+              isPut = true;
+            } 
+            else {
+              Pattern pget = Pattern.compile("^(\\S+)\\s+/(\\S+)\\s+(\\S+)$");
+              Matcher mget = pget.matcher(request);
+              if(mget.matches()) {
+                String method=mget.group(1);
+                shortResource=mget.group(2);
               }
-              
+              else {
+                System.err.println("Invalid request");
+                PrintWriter out = new PrintWriter(streamToClient);
+                out.print("Proxy got Invalid request " + request + ":"
+                    + ":\n");
+                out.flush();
+                socket.close();
+                return;
+              }
             }
+            
+          }
           catch (Exception e) {
-              System.err.println("Server error");
-              PrintWriter out = new PrintWriter(streamToClient);
-              out.print("Proxy got a Server error\n");
-              out.flush();
-              socket.close();
-              return;
+            System.err.println("Server error");
+            PrintWriter out = new PrintWriter(streamToClient);
+            out.print("Proxy got a Server error\n");
+            out.flush();
+            socket.close();
+            return;
           }
 
           getServers(shortResource);
           if (currentServer == null && backup == null) {
-              System.err.println("Server error");
-              PrintWriter out = new PrintWriter(streamToClient);
-              out.print("Proxy got a Server error\n");
-              out.flush();
-              socket.close();
-              return;
+            System.err.println("Server error");
+            PrintWriter out = new PrintWriter(streamToClient);
+            out.print("Proxy got a Server error\n");
+            out.flush();
+            socket.close();
+            return;
           }
           
           String host = currentServer.host;
@@ -167,16 +163,12 @@ public class LBThread extends Thread {
               try {
                 outToServer.write(request);
                 outToServer.write("\n");
-                //outToServer.flush();
-                //streamToServer.flush();
                 while ((input_Line = in.readLine()) != null) {
                   outToServer.write(input_Line);
                   outToServer.write("\n");
                   if (input_Line.equals("")) {
                     outToServer.flush();
-                    //streamToServer.flush();
                   }
-                  //streamToServer.flush();
                 }
               } catch (IOException e) {
                  System.err.println("thread reading lb: " + e.getMessage());
@@ -186,7 +178,6 @@ public class LBThread extends Thread {
               // connection to the server.
               try {
                 outToServer.close();
-              //   streamToServer.close();
               } catch (IOException e) {
                 System.err.println("Thread : " + e.getMessage());
               }
@@ -285,3 +276,4 @@ public class LBThread extends Thread {
     }
 
   }
+  

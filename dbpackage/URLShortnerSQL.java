@@ -4,21 +4,6 @@ public class URLShortnerSQL {
 
 	private String URL = null;
 
-	public static void main(String[] args) {
-		if ((args.length != 2)){
-            throw new IllegalArgumentException("Wrong number of arguments!\nUsage: java URLShortner fullPath fileName");
-    }
-		// String fileName = args[0];
-		// String url = args[1] + fileName;
-		// URLShortnerSQL sql = new URLShortnerSQL(url);
-		// sql.insertOrReplace("rohan", "sim", 1);
-		// sql.printAll();
-		// String longURL = sql.findByShortURL("bby");
-		// System.out.println(longURL);
-		// longURL = sql.findByShortURL("rohan");
-		// System.out.println(longURL);
-	}
-
 	public URLShortnerSQL(String URL) {
 		this.URL = URL;
 	}
