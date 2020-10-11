@@ -20,7 +20,7 @@ pool = Pool(pool_size)
 
 t0 = time.time()
 
-for i in range(1000):
+for i in range(10000):
     pool.apply_async(worker, (i,))
 
 

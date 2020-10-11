@@ -12,22 +12,40 @@ from contextlib import closing
 
 class OrchestrationService(Cmd):
 
+    
+    PROXY_PORT = 0
+    LOAD_BALANCER_PORT = 0
+    URL_SHORTENER_PORT = 0
+    CACHE_SIZE = 0
+
     def __init__(self):
         super(OrchestrationService, self).__init__()
     
         # Read file into an array once.
+        self.ports = []
         self.hosts_array = []
         self.hosts_ranges_start = []
         self.hosts_ranges_end = []
         self.range_exists = False
         with open('hosts') as hosts_file:
-            for host in hosts_file:
-                host_range = host.rstrip().split(" ")
-                self.hosts_array.append(host_range[0])
-                self.hosts_ranges_start.append(host_range[1])
-                self.hosts_ranges_end.append(host_range[2])
-                if (host_range[1] == '0' and host_range[2] == '255'):
-                    self.range_exists = True
+            i = 0
+            for line in hosts_file:
+                if (i == 0):
+                    port_line = line.rstrip().split(" ")
+                    self.PROXY_PORT = (int(port_line[0]))
+                    self.LOAD_BALANCER_PORT = (int(port_line[1]))
+                    self.URL_SHORTENER_PORT = (int(port_line[2]))
+                elif (i == 1):
+                    self.CACHE_SIZE = (int(line))
+                else:
+                    host_range = line.rstrip().split(" ")
+                    self.hosts_array.append(host_range[0])
+                    self.hosts_ranges_start.append(host_range[1])
+                    self.hosts_ranges_end.append(host_range[2])
+                    if (host_range[1] == '0' and host_range[2] == '255'):
+                        self.range_exists = True
+                i += 1
+                
         if self.range_exists == False:
             raise Exception('Error: No backup host specified')
         if len(self.hosts_array) == 0:
@@ -39,10 +57,6 @@ class OrchestrationService(Cmd):
     prompt = '> '
     intro = "Orchestration Service for CSC409. Type ? to list commands"
     
-    PROXY_PORT = 8008
-    LOAD_BALANCER_PORT = 8009
-    URL_SHORTENER_PORT = 8010
-    CACHE_SIZE = 100
 
     has_started = False
 
@@ -105,7 +119,7 @@ class OrchestrationService(Cmd):
             # Setup URL Shortener
             if (self.check_socket(host, self.URL_SHORTENER_PORT)):
                 print("Starting up {} URL Shortener service".format(host))
-                subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, CACHE_SIZE, n, host, host)])
+                subprocess.run(["ssh", host, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, self.URL_SHORTENER_PORT, self.CACHE_SIZE, n, host, host)])
             else: 
                 print("Cannot start URL Shortener on {}:{} - port may already be in use".format(host, self.URL_SHORTENER_PORT))
                 n += 1
@@ -164,6 +178,8 @@ class OrchestrationService(Cmd):
             # Remove *.db file
             if p: 
                 print("Shutting down {} database...".format(host))
+                subprocess.run(["ssh", host, "cd {}; rm ./dbpackage/out/*".format(cwd)])
+                subprocess.run(["ssh", host, "cd {}; rm ./proxy/out/*".format(cwd)])
                 subprocess.run(["ssh", host, "cd {}; rm /virtual/*.db".format(cwd)])
 
     def do_stop(self, input):
