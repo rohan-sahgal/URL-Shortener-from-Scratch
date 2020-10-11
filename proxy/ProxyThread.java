@@ -14,10 +14,10 @@ public class ProxyThread extends Thread {
     
 
     public ProxyThread(Work w, ProxyTripleList triples) {			
-        super("ProxyThread");
-        this.w = w;
-        this.num_hosts = triples.size();
-        this.triples = triples;
+      super("ProxyThread");
+      this.w = w;
+      this.num_hosts = triples.size();
+      this.triples = triples;
     }
 
     
@@ -28,18 +28,17 @@ public class ProxyThread extends Thread {
         sends response to user **/
     
     public void run() {
-
-        try {
-            while (true) {
-              runServer(w.getWork());
-            }
-             // never returns
-        } catch (Exception e) {
-            System.err.println(e);
-        }
+      try {
+          while (true) {
+            runServer(w.getWork());
+          }
+            // never returns
+      } catch (Exception e) {
+          System.err.println(e);
+      }
     }
 
-      /**
+    /**
      * runs a single-threaded proxy server on
      * the specified local port. It never returns.
      */
@@ -55,19 +54,18 @@ public class ProxyThread extends Thread {
 
       Socket server = null;
       try {
+        // client input streams and buffers
+        final InputStream streamFromClient = socket.getInputStream();
+        final OutputStream streamToClient = socket.getOutputStream();
+        
+        int serverIndex = triples.getServerIdx();
+        ProxyTriple currentServer = triples.get(serverIndex);
+        String host = currentServer.host;
+        int remoteport = currentServer.port;
 
-          // client input streams and buffers
-          final InputStream streamFromClient = socket.getInputStream();
-          final OutputStream streamToClient = socket.getOutputStream();
-          
-          int serverIndex = triples.getServerIdx();
-          ProxyTriple currentServer = triples.get(serverIndex);
-          String host = currentServer.host;
-          int remoteport = currentServer.port;
-
-          // Make a connection to the real server.
-          // If we cannot connect to the server, send an error to the
-          // client, disconnect, and continue waiting for connections.
+        // Make a connection to the real server.
+        // If we cannot connect to the server, send an error to the
+        // client, disconnect, and continue waiting for connections.
           try {
             server = new Socket(host, remoteport);
             System.out.println("Connected to real server " + host + ":" + remoteport);
@@ -127,15 +125,15 @@ public class ProxyThread extends Thread {
           // connection to our socket.
           streamToClient.close();
       } catch (IOException e) {
-          System.err.println(e);
+        System.err.println(e);
       } finally {
-          try {
-            if (server != null)
-              server.close();
-            if (socket != null)
-              socket.close();
-          } catch (IOException e) {
-          }
+        try {
+          if (server != null)
+            server.close();
+          if (socket != null)
+            socket.close();
+        } catch (IOException e) {
+        }
       }
 
     }

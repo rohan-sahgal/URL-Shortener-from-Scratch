@@ -46,13 +46,6 @@ public class MultiThreadedLB {
         ServerSocket serverSocket = null;
         boolean listening = true;
 
-
-        // try {
-        //     port_num = Integer.parseInt(args[0]);
-        // } catch (Exception e) {
-
-        // }
-
         try {
             serverSocket = new ServerSocket(port_num);
             System.out.println("Started on: " + port_num);
