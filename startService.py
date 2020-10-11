@@ -29,9 +29,9 @@ class OrchestrationService(Cmd):
         self.hosts_ranges_start = []
         self.hosts_ranges_end = []
         self.range_exists = False
-        with open('hosts') as hosts_file:
+        with open('config') as config_file:
             i = 0
-            for line in hosts_file:
+            for line in config_file:
                 if (i == 0):
                     port_line = line.rstrip().split(" ")
                     self.PROXY_PORT = (int(port_line[0]))
@@ -59,7 +59,7 @@ class OrchestrationService(Cmd):
         '''# Cleanup all existing logging and database files for the 
         proxy/LBs/URL Shorteners. 
         Setup/start the database, proxy, load balancers and URLShortener
-        service on all hosts defined in the `host` file.'''
+        service on all hosts defined in the `config` file.'''
         
         # Create out directories
         self.make_output_directories()
@@ -128,12 +128,11 @@ class OrchestrationService(Cmd):
             print("Please restart the services before monitoring.\n")
 
     def do_status(self, input):
-        '''# Print status of the proxy, database, load balancer and URLShortener service
+        '''# Print status of the proxy, load balancer and URLShortener service.
         '''
         proxyBuilder = ["\nProxy Status:\n"]
         lbBuilder = ["\nLoad Balancer Status:\n"]
         urlBuilder = ["\nURL Shortener Status:\n"]
-        dbBuilder = ["\nDatabase Status:\n"]
 
         proxyOutput = subprocess.run(["ssh", self.hosts_array[0], "lsof -i -P | grep {} | cut -d' ' -f5".format(self.PROXY_PORT)], stdout=PIPE, stderr=PIPE)
         self.service_status("Proxy", self.hosts_array[0], self.PROXY_PORT, proxyOutput.stdout, proxyBuilder)
@@ -163,7 +162,7 @@ class OrchestrationService(Cmd):
 
     def do_stop(self, input):
         '''# Stop the proxy and all running load balancers/URL shorteners
-        on all the hosts defined in the `host` file.'''
+        on all the hosts defined in the `config` file.'''
         CWD = os.getcwd()
         
         self.stop_servers(self.hosts_array, CWD, startUp=False)

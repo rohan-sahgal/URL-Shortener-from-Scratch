@@ -21,9 +21,9 @@ def init_hosts(hosts):
     global LOAD_BALANCER_PORT
     global URL_SHORTENER_PORT
     global CACHE_SIZE
-    with open('hosts') as hosts_file:
+    with open('config') as config_file:
         i = 0
-        for line in hosts_file:
+        for line in config_file:
 
             if (i == 0):
                 port_line = line.rstrip().split(" ")

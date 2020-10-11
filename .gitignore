@@ -3,6 +3,7 @@
 /dbpackage/.*
 /dbpackage/out
 /proxy/out
+out
 .*
 *.class
 !/.gitignore
