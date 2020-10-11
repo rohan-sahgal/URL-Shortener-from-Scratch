@@ -78,7 +78,7 @@ class OrchestrationService(Cmd):
         # Setup Proxy Server
         if (self.check_socket(firstHost, self.PROXY_PORT)):
             print ("Starting up {} proxy server".format(firstHost))
-            subprocess.run(["ssh", firstHost, "cd {}/proxy; nohup java MultiThreadedProxy {} 4 {} > out/proxy{}.out 2>out/proxy{}.error < /dev/null &".format(CWD, self.PROXY_PORT, argsProxy, firstHost, firstHost)])
+            subprocess.run(["ssh", firstHost, "cd {}/proxy; nohup java MultiThreadedProxy {} 8 {} > out/proxy{}.out 2>out/proxy{}.error < /dev/null &".format(CWD, self.PROXY_PORT, argsProxy, firstHost, firstHost)])
         else:
             print("Cannot start proxy on {}:{} - port may already be in use".format(firstHost, self.PROXY_PORT))
         
@@ -97,7 +97,7 @@ class OrchestrationService(Cmd):
             # Setup Load Balancer
             if (self.check_socket(host, self.LOAD_BALANCER_PORT)):
                 print("Starting up {} load balancer".format(host))
-                subprocess.run(["ssh", host, "cd {}/proxy; nohup java MultiThreadedLB {} 4 {} > out/LB{}.out 2>out/LB{}.error < /dev/null &".format(CWD, self.LOAD_BALANCER_PORT, argsLB, host, host)])
+                subprocess.run(["ssh", host, "cd {}/proxy; nohup java MultiThreadedLB {} 8 {} > out/LB{}.out 2>out/LB{}.error < /dev/null &".format(CWD, self.LOAD_BALANCER_PORT, argsLB, host, host)])
             else: 
                 print("Cannot start LB on {}:{} - port may already be in use".format(host, self.LOAD_BALANCER_PORT))
             
