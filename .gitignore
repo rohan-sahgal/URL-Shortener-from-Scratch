@@ -1,6 +1,8 @@
 /db/*.db
 /database.txt
 /dbpackage/.*
+/dbpackage/out/.*
+/proxy/out/.*
 .*
 *.class
 !/.gitignore
