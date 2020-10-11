@@ -10,7 +10,7 @@ def worker(i):
         longResource = "http://"+''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(100))
         # shortResource = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(20))
 
-        request="http://dh2010pc30:8000/?short={}&long={}".format(i, longResource)
+        request="http://dh2010pc30:8008/?short={}&long={}".format(i, longResource)
         subprocess.call(["curl", "-X", "PUT", request], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     
     except Exception as e:
@@ -22,6 +22,10 @@ t0 = time.time()
 
 for i in range(1000):
     pool.apply_async(worker, (i,))
+
+for i in range(1000):
+    pool.apply_async(worker, (i,))
+
 pool.close()
 pool.join()
 
