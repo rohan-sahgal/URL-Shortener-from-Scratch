@@ -16,10 +16,6 @@ hosts_ranges_end = []
 
 CWD = os.getcwd()
 
-def signal_handler(sig, frame):
-    print("\nExiting to startService\n")
-    sys.exit(0)
-
 def init_hosts(hosts):
     global PROXY_PORT
     global LOAD_BALANCER_PORT
@@ -76,8 +72,6 @@ for i in range(len(hosts_array)):
     
     argsLB += host + " " + str(URL_SHORTENER_PORT) + " " + "1" + " " + host_range_start + " " + host_range_end + " "
     argsProxy += host + " " + str(LOAD_BALANCER_PORT) + " " + "1" + " " + host_range_start + " " + host_range_end + " "
-
-signal.signal(signal.SIGINT, signal_handler)
 
 # Main Loop
 print("Monitoring services that go down...\nPress Ctrl+C to exit.")

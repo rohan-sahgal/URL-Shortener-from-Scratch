@@ -108,6 +108,9 @@ class OrchestrationService(Cmd):
                 print("Cannot start URL Shortener on {}:{} - port may already be in use".format(host, self.URL_SHORTENER_PORT))
                 n += 1
 
+        subprocess.run("nohup python3 -u startMonitoring.py > out/monitoring.out 2>out/monitoring.error < /dev/null &", shell=True)
+        print("Started Monitoring Service")
+
         self.has_started = True
            
     def check_socket(self, host, port):
@@ -116,9 +119,11 @@ class OrchestrationService(Cmd):
             return not sock.connect_ex((host, port)) == 0
 
     def do_monitor(self, input):
-        '''# Monitor '''
-        if (self.has_started):
-            subprocess.run("python3 startMonitoring.py", shell=True)
+        '''# Tails the monitoring file and outputs to the orchestration output.
+        Service must be running to run this command.
+        '''
+        if self.has_started:
+            subprocess.run(["tail", "-f", "out/monitoring.out"])
         else:
             print("Please restart the services before monitoring.\n")
 
@@ -162,7 +167,7 @@ class OrchestrationService(Cmd):
         CWD = os.getcwd()
         
         self.stop_servers(self.hosts_array, CWD, startUp=False)
-        
+
         self.has_started = False
         print("Servers successfully shut down.")
 
