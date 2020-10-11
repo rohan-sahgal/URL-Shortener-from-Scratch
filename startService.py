@@ -175,7 +175,7 @@ class OrchestrationService(Cmd):
             if p: print("Shutting down servers on {}...".format(host))
             subprocess.run(["ssh", host, "killall java"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
 
-            # Remove *.db file
+            # Remove db and output files
             if p: 
                 print("Shutting down {} database...".format(host))
                 subprocess.run(["ssh", host, "cd {}; rm ./dbpackage/out/*".format(cwd)])
