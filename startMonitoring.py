@@ -16,12 +16,9 @@ hosts_ranges_end = []
 
 CWD = os.getcwd()
 
-
-
 def signal_handler(sig, frame):
     print("\nExiting to startService\n")
     sys.exit(0)
-
 
 def init_hosts(hosts):
     global PROXY_PORT
@@ -53,10 +50,6 @@ def init_hosts(hosts):
     if len(hosts) == 0:
         raise Exception('Error: No hosts specified in the host file.')
 
-    firstHost = hosts[0]
-
-
-
 def revive(serviceName, hostName, servicePort):
     print ("\n{} on {}:{} down: restarting...".format(serviceName, hostName, servicePort))
     if serviceName == "Proxy":
@@ -67,15 +60,11 @@ def revive(serviceName, hostName, servicePort):
         print ("Successfully restarted {} on {}:{}".format(serviceName, hostName, servicePort))
     elif serviceName == "URL Shortener":
         subprocess.run(["ssh", hostName, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, servicePort, CACHE_SIZE, hosts_array.index(hostName) + 1, hostName, hostName)])
-        # subprocess.run(["ssh", hostName, "cd {}/dbpackage; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' URLShortner {} url{}.db jdbc:sqlite:/virtual/ > out/shortenerService{}.out 2>out/shortenerService{}.error < /dev/null &".format(CWD, servicePort, hosts_array.index(hostName) + 1, hostName, hostName)])
         print ("Successfully restarted {} on {}:{}".format(serviceName, hostName, servicePort))
 
 def service_status(serviceName, hostName, servicePort, proxyOutput):
     if proxyOutput == b'':
         revive(serviceName, hostName, servicePort)
-
-
-
 
 init_hosts(hosts_array)
 
@@ -94,7 +83,6 @@ signal.signal(signal.SIGINT, signal_handler)
 print("Monitoring services that go down...\nPress Ctrl+C to exit.")
 
 while True:
-
     proxyOutput = subprocess.run(["ssh", hosts_array[0], "lsof -i -P | grep {} | cut -d' ' -f5".format(PROXY_PORT)], stdout=PIPE, stderr=PIPE)
     service_status("Proxy", hosts_array[0], PROXY_PORT, proxyOutput.stdout)
 
@@ -104,12 +92,5 @@ while True:
 
         urlOutput = subprocess.run(["ssh", host, "lsof -i -P | grep {} | cut -d' ' -f5".format(URL_SHORTENER_PORT)], stdout=PIPE, stderr=PIPE) 
         service_status("URL Shortener", host, URL_SHORTENER_PORT, urlOutput.stdout)
-
-        #figure out how to see state of database
-        #idea: try a put and remove, see if successful?
-        
-    
-
-
 
     time.sleep(1)

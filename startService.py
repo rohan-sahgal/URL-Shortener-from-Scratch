@@ -11,12 +11,14 @@ from contextlib import closing
 
 
 class OrchestrationService(Cmd):
-
-    
     PROXY_PORT = 0
     LOAD_BALANCER_PORT = 0
     URL_SHORTENER_PORT = 0
     CACHE_SIZE = 0
+    has_started = False
+
+    prompt = '> '
+    intro = "Orchestration Service for CSC409. Type ? to list commands"
 
     def __init__(self):
         super(OrchestrationService, self).__init__()
@@ -39,7 +41,7 @@ class OrchestrationService(Cmd):
                     self.CACHE_SIZE = (int(line))
                 else:
                     host_range = line.rstrip().split(" ")
-                    self.hosts_array.append(host_range[0])
+                    self.hosts_array.append(host_range[0].rstrip())
                     self.hosts_ranges_start.append(host_range[1])
                     self.hosts_ranges_end.append(host_range[2])
                     if (host_range[1] == '0' and host_range[2] == '255'):
@@ -53,20 +55,11 @@ class OrchestrationService(Cmd):
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
-        
-    prompt = '> '
-    intro = "Orchestration Service for CSC409. Type ? to list commands"
-    
-
-    has_started = False
-
-    #TODO: give error message when servers cannot start properly (e.g. ports busy)
     def do_start(self, input):
-        '''# Setup/start the database, proxy, load balancers and URLShortener
+        '''# Cleanup all existing logging and database files for the 
+        proxy/LBs/URL Shorteners. 
+        Setup/start the database, proxy, load balancers and URLShortener
         service on all hosts defined in the `host` file.'''
-
-   
-
         
         # Create out directories
         self.make_output_directories()
@@ -87,8 +80,8 @@ class OrchestrationService(Cmd):
 
         firstHost = self.hosts_array[0]
 
-        #check if ports are available
-        self.stop_servers(self.hosts_array, CWD, p=False)
+        # Stop servers started by this user and cleanup all outputs
+        self.stop_servers(self.hosts_array, CWD, startUp=True)
 
         # Setup Proxy Server
         if (self.check_socket(firstHost, self.PROXY_PORT)):
@@ -97,18 +90,9 @@ class OrchestrationService(Cmd):
         else:
             print("Cannot start proxy on {}:{} - port may already be in use".format(firstHost, self.PROXY_PORT))
         
-
-        
         n = 1
         for host in self.hosts_array:
-            
-            host = host.rstrip()
-            # TODO: need to catch bad host names
-            
-            # # Setup Database
-            # print("Starting up {} database".format(host))
-            # subprocess.run(["ssh", host, "cd {}/dbpackage/; java -classpath '.:../db/sqlite-jdbc-3.32.3.2.jar' MakeDB url{}.db jdbc:sqlite:/virtual/".format(CWD, n)], stdout=subprocess.DEVNULL)
-            
+
             # Setup Load Balancer
             if (self.check_socket(host, self.LOAD_BALANCER_PORT)):
                 print("Starting up {} load balancer".format(host))
@@ -123,18 +107,13 @@ class OrchestrationService(Cmd):
             else: 
                 print("Cannot start URL Shortener on {}:{} - port may already be in use".format(host, self.URL_SHORTENER_PORT))
                 n += 1
-        
-        self.has_started = True
-    
-    def check_socket(self, host, port):
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
-            if sock.connect_ex((host, port)) == 0:
-                # port unvailable
-                return False
-            else:
-                # port available
-                return True
 
+        self.has_started = True
+           
+    def check_socket(self, host, port):
+        ''' Check if port is available for use'''
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+            return not sock.connect_ex((host, port)) == 0
 
     def do_monitor(self, input):
         '''# Monitor '''
@@ -144,7 +123,7 @@ class OrchestrationService(Cmd):
             print("Please restart the services before monitoring.\n")
 
     def do_status(self, input):
-        '''# Monitor the proxy, database, load balancer and URLShortener service
+        '''# Print status of the proxy, database, load balancer and URLShortener service
         '''
         proxyBuilder = ["\nProxy Status:\n"]
         lbBuilder = ["\nLoad Balancer Status:\n"]
@@ -160,42 +139,35 @@ class OrchestrationService(Cmd):
 
             urlOutput = subprocess.run(["ssh", host, "lsof -i -P | grep {} | cut -d' ' -f5".format(self.URL_SHORTENER_PORT)], stdout=PIPE, stderr=PIPE) 
             self.service_status("URL Shortener", host, self.URL_SHORTENER_PORT, urlOutput.stdout, urlBuilder)
-
-            #figure out how to see state of database
-            #idea: try a put and remove, see if successful?
-            
-        
+                
         print(''.join(str(x) for x in (proxyBuilder + lbBuilder + urlBuilder)))
 
-    def stop_servers(self, hosts, cwd, p):
-        for host in self.hosts_array:
-            host = host.rstrip()
+    def stop_servers(self, hosts, cwd, startUp):
+        print("Shutting down existing running services...")
+        
+        if startUp: print("Cleaning up output logs and databases")
 
-            # Kills all java servers
-            if p: print("Shutting down servers on {}...".format(host))
+        subprocess.run("pkill -9 -f startMonitoring.py", shell=True)
+        for host in self.hosts_array:
             subprocess.run(["ssh", host, "killall java"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) 
 
-            # Remove db and output files
-            if p: 
-                print("Shutting down {} database...".format(host))
-                subprocess.run(["ssh", host, "cd {}; rm ./dbpackage/out/*".format(cwd)])
-                subprocess.run(["ssh", host, "cd {}; rm ./proxy/out/*".format(cwd)])
-                subprocess.run(["ssh", host, "cd {}; rm /virtual/*.db".format(cwd)])
+            if startUp:
+                subprocess.run(["ssh", host, "cd {}; rm dbpackage/out/*.* > /dev/null".format(cwd)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(["ssh", host, "cd {}; rm proxy/out/*.* > /dev/null".format(cwd)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(["ssh", host, "cd {}; rm /virtual/*.db > /dev/null".format(cwd)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def do_stop(self, input):
-        '''# Stop the database, proxy, load balancers and URLShortener service 
-        on all hosts defined in the `host` file.'''
+        '''# Stop the proxy and all running load balancers/URL shorteners
+        on all the hosts defined in the `host` file.'''
         CWD = os.getcwd()
         
-        # Stop proxy server
-        print("Shutting down all java servers and removing databases...\n")
+        self.stop_servers(self.hosts_array, CWD, startUp=False)
         
-        self.stop_servers(self.hosts_array, CWD, True)
-            
-        print("Servers successfully shut down.")
         self.has_started = False
+        print("Servers successfully shut down.")
 
     def service_status(self, serviceName, hostName, servicePort, proxyOutput, outputBuilder):
+        ''' Helper for do_status '''
         if proxyOutput == b'':
             outputBuilder.append("{:<20}{}:{:<5} \t DOWN \n".format(serviceName, hostName, servicePort))
         else:
@@ -206,15 +178,19 @@ class OrchestrationService(Cmd):
         subprocess.run("./compileJava", shell=True)
     
     def make_output_directories(self):
+        MONITOR_OUT_DIR = "out"
         PROXY_OUT_DIR = "proxy/out"
         DBPACKAGE_OUT_DIR = "dbpackage/out"
           
         try:
-          if not os.path.exists(PROXY_OUT_DIR):
-              os.mkdir(PROXY_OUT_DIR)
-          
-          if not os.path.exists(DBPACKAGE_OUT_DIR):
-              os.mkdir(DBPACKAGE_OUT_DIR)
+            if not os.path.exists(MONITOR_OUT_DIR):
+                os.mkdir(MONITOR_OUT_DIR)
+            
+            if not os.path.exists(PROXY_OUT_DIR):
+                os.mkdir(PROXY_OUT_DIR)
+            
+            if not os.path.exists(DBPACKAGE_OUT_DIR):
+                os.mkdir(DBPACKAGE_OUT_DIR)
         except OSError:
           print("Creation of the directories failed")            
 
@@ -226,7 +202,4 @@ class OrchestrationService(Cmd):
         '''Exit the service.'''
         return True
 
-
-
 OrchestrationService().cmdloop()
-
