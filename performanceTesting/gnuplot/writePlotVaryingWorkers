@@ -1,6 +1,6 @@
 #!/usr/bin/gnuplot --persist
 
-set title "Read Performance (1000 Reads) with Varying Workers" font ",22"
+set title "Write Performance (1000 Writes) with Varying Workers" font ",22"
 set xlabel "Number of Workers" font ",15"
 set ylabel "Avg Elapsed Time from 5 Runs (s)" font ",15"
 set xtics font ",15"
@@ -8,5 +8,5 @@ set ytics font ",15"
 set key right top Left reverse spacing 3 font ",15"
 set grid
 set term png size 1200, 800
-set output "readPlotVaryingWorkers.png"
-plot "data/read_data.tsv" using 1:xticlabels(2) title "w" with linespoints ps 4 pt 1
+set output "writePlotVaryingWorkers.png"
+plot "data/write_data_v_workers.tsv" using 1:xticlabels(2) title "w" with linespoints ps 4 pt 1

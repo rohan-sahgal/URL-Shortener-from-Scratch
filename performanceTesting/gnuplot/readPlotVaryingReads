@@ -1,0 +1,12 @@
+#!/usr/bin/gnuplot --persist
+
+set title "Read Performance with Varying Number of Reads" font ",22"
+set xlabel "Number of Reads" font ",15"
+set ylabel "Avg Elapsed Time from 5 Runs (s)" font ",15"
+set xtics font ",15"
+set ytics font ",15"
+set key right top Left reverse spacing 3 font ",15"
+set grid
+set term png size 1200, 800
+set output "varyingReads.png"
+plot "data/varying_reads.tsv" using 1:xticlabels(2) title "w" with linespoints ps 4 pt 1
