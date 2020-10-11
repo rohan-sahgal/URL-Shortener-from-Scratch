@@ -50,7 +50,7 @@ public class ProxyThread extends Thread {
       byte[] reply = new byte[4096];
       final byte[] request = new byte[1024];
 
-      System.out.println("client connected to proxy");
+      System.out.println("Client connected to proxy");
 
       Socket server = null;
       try {
