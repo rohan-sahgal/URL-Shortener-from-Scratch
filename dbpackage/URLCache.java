@@ -33,7 +33,7 @@ public class URLCache {
     public String get(String key) {
 		if (cache.containsKey(key)) {
 			Node node = cache.get(key);
-            remove(node);
+      remove(node);
 			return node.value;
 		}
 		return null;
