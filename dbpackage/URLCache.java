@@ -3,32 +3,34 @@ import java.util.HashMap;
 // LRU Cache
 public class URLCache {
 	HashMap<String, Node> cache;
-	int size;
+	int maxSize;
 	Node head;
 	Node tail;
 
 	public URLCache(int size) {
-		this.size = size;
+		this.maxSize = size;
 		cache = new HashMap<>();
 		head = null;
 		tail = null;
 	}
 
 	public void add(String key, String value) {
-    Node node = new Node(key, value);
-		if (cache.size() == 0) {
-			head = node;
-			tail = node;
-		} else {
-			if (cache.size() == this.size) {
-				remove(this.tail);
+		if (this.maxSize != 0) {
+			Node node = new Node(key, value);
+			if (cache.size() == 0) {
+				head = node;
+				tail = node;
+			} else {
+				if (cache.size() == this.maxSize) {
+					remove(this.tail);
+				}
+				node.next = this.head;
+				this.head.prev = node;
+				head = node;
 			}
-			node.next = this.head;
-			this.head.prev = node;
-			head = node;
+			cache.put(key, node);
 		}
-		cache.put(key, node);
-    }
+  }
     
     public String get(String key) {
 		if (cache.containsKey(key)) {
@@ -40,15 +42,17 @@ public class URLCache {
 	}
 
 	private void remove(Node node) {
-		if (this.head == node)
-			this.head = node.next;
-		if (this.tail == node)
-			this.tail = node.prev;
-		if (node.prev != null)
-			node.prev.next = node.next;
-		if (node.next != null)
-			node.next.prev = node.prev;
-		cache.remove(node.key);
+		if (node != null) {
+			if (this.head == node)
+				this.head = node.next;
+			if (this.tail == node)
+				this.tail = node.prev;
+			if (node.prev != null)
+				node.prev.next = node.next;
+			if (node.next != null)
+				node.next.prev = node.prev;
+			cache.remove(node.key);
+		}
 	}
 }
 
